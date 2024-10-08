@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CudaCompile Include="kernel.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Vulkan">
+      <UniqueIdentifier>{53bb7493-1df3-442a-aace-610c83010808}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="vulkan.hpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="v_window.hpp">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="v_device.hpp">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="v_pipeline.hpp">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
