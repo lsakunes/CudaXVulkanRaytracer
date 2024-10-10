@@ -23,5 +23,8 @@
     <ClInclude Include="v_pipeline.hpp">
       <Filter>Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="v_swap_chain.hpp">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
