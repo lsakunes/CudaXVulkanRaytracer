@@ -66,12 +66,8 @@ void Vulkan::createPipelineLayout() {
 }
 
 void Vulkan::createPipeline() {
-    PipelineConfigInfo pipelineConfig = V_Pipeline::defaultPipelineConfigInfo(v_swapchain.width(), v_swapchain.height());
-
-    std::cout << &pipelineConfig << "\n";
-    std::cout << pipelineConfig.colorBlendInfo.pAttachments->colorWriteMask << "\n"; // 15      (correct)
-    std::cout << pipelineConfig.colorBlendInfo.pAttachments->colorWriteMask << "\n"; // 32763   (???)
-    //what the fuck is happening
+    PipelineConfigInfo pipelineConfig = PipelineConfigInfo{};
+    V_Pipeline::defaultPipelineConfigInfoX(pipelineConfig, v_swapchain.width(), v_swapchain.height());
 
     pipelineConfig.renderPass = v_swapchain.getRenderPass();
     pipelineConfig.pipelineLayout = pipelineLayout;
@@ -92,5 +88,16 @@ Vulkan::Vulkan() {
 Vulkan::~Vulkan() {
     vkDestroyPipelineLayout(v_device.device(), pipelineLayout, nullptr);
 }
+
+//void Vulkan::createCommandBuffers() {
+//    commandBuffers.resize(v_swapchain.imageCount());
+//
+//    VkCommandBufferAllocateInfo allocInfo{};
+//    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+//    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+//    allocInfo.commandPool = v_device.getCommandPool();
+//
+//
+//}
 }
 #endif
