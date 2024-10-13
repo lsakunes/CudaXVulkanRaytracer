@@ -95,10 +95,15 @@
     <ClCompile Include="vulkan.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="v_model.hpp" />
     <ClInclude Include="v_swap_chain.hpp" />
     <ClInclude Include="v_device.hpp" />
     <ClInclude Include="v_pipeline.hpp" />
     <ClInclude Include="v_window.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\shader.frag" />
+    <None Include="shaders\shader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -2,6 +2,7 @@
 #define VPIPELINEHPP
 
 #include "v_device.hpp"
+#include "v_model.hpp"
 
 // std
 #include <string>
@@ -41,6 +42,7 @@ public:
 	static PipelineConfigInfo defaultPipelineConfigInfo(uint32_t width, uint32_t height);
 	static void defaultPipelineConfigInfoX(PipelineConfigInfo& configInfo, uint32_t width, uint32_t height);
 
+	void bindGraphics(VkCommandBuffer buffer);
 private:
 	static std::vector<char> readFile(const std::string& filepath);
 	void createGraphicsPipeline(
@@ -51,7 +53,7 @@ private:
 	void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
 
 	V_Device& v_device;
-	VkPipeline graphicsPipeline;
+	VkPipeline graphicsPipeline; // TODO: there's also a raytracing and a compute pipeline. idk if we're gonna need it with the interop but check later
 	VkShaderModule vertShaderModule;
 	VkShaderModule fragShaderModule;
 };
@@ -111,12 +113,14 @@ void V_Pipeline::createGraphicsPipeline(
 	shaderStages[1].pNext = nullptr;
 	shaderStages[1].pSpecializationInfo = nullptr;
 
+	auto bindingDescriptions = V_Model::Vertex::getBindingDescriptions();
+	auto attributeDescriptions = V_Model::Vertex::getAttributeDescriptions();
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputInfo.vertexBindingDescriptionCount = 0;
-	vertexInputInfo.pVertexAttributeDescriptions = nullptr;
-	vertexInputInfo.pVertexBindingDescriptions = nullptr;
+	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+	vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
+	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+	vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
 
 	VkPipelineViewportStateCreateInfo viewportInfo{};
 	viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -127,7 +131,7 @@ void V_Pipeline::createGraphicsPipeline(
 
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipelineInfo.stageCount = 2; // different with cuda? check out what to do with stages later
+	pipelineInfo.stageCount = 2; // TODO: different with cuda? check out what to do with stages later
 	pipelineInfo.pStages = shaderStages;
 	pipelineInfo.pVertexInputState = &vertexInputInfo;
 	pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;
@@ -143,13 +147,13 @@ void V_Pipeline::createGraphicsPipeline(
 	pipelineInfo.subpass = configInfo.subpass;
 
 	// OPTIMIZATION 
-	// Can be less expensive for gpu to create
+	// TODO: Can be less expensive for gpu to create
 	// a new pipeline by deriving from existing one
 	pipelineInfo.basePipelineIndex = -1;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 	// OPTIMIZATION
-	// second argument is pipeline cache 
+	// TODO: second argument is pipeline cache 
 	if (vkCreateGraphicsPipelines(v_device.device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create pipeline");
 	}
@@ -235,7 +239,7 @@ PipelineConfigInfo V_Pipeline::defaultPipelineConfigInfo(uint32_t width, uint32_
 void V_Pipeline::defaultPipelineConfigInfoX(PipelineConfigInfo& configInfo, uint32_t width, uint32_t height) {
 	// VERTEX SHADER
 	configInfo.inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	// check if we want to use a triangle strip later; could save a lot of memory but we'd have to
+	// TODO: check if we want to use a triangle strip later; could save a lot of memory but we'd have to
 	// be careful with geometry
 	configInfo.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	configInfo.inputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
@@ -253,10 +257,10 @@ void V_Pipeline::defaultPipelineConfigInfoX(PipelineConfigInfo& configInfo, uint
 	// RASTERIZER
 	configInfo.rasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	configInfo.rasterizationInfo.depthClampEnable = VK_FALSE;
-	configInfo.rasterizationInfo.rasterizerDiscardEnable = VK_FALSE; // Discards all primitives before rasterization? Might be important
-	configInfo.rasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL; // We can draw wireframe using this! I think we should that would be cool
+	configInfo.rasterizationInfo.rasterizerDiscardEnable = VK_FALSE; // TODO: Discards all primitives before rasterization? Might be important
+	configInfo.rasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL; // TODO: We can draw wireframe using this! I think we should that would be cool
 	configInfo.rasterizationInfo.lineWidth = 1.0f;
-	configInfo.rasterizationInfo.cullMode = VK_CULL_MODE_NONE; // Backface culling leads to big performance benefits
+	configInfo.rasterizationInfo.cullMode = VK_CULL_MODE_NONE; // TODO: Backface culling leads to big performance benefits
 	configInfo.rasterizationInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
 	configInfo.rasterizationInfo.depthBiasEnable = VK_FALSE;
 
@@ -283,6 +287,10 @@ void V_Pipeline::defaultPipelineConfigInfoX(PipelineConfigInfo& configInfo, uint
 	configInfo.depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
 	configInfo.depthStencilInfo.depthBoundsTestEnable = VK_FALSE;
 	configInfo.depthStencilInfo.stencilTestEnable = VK_FALSE;
+}
+
+void V_Pipeline::bindGraphics(VkCommandBuffer buffer) {
+	vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 }
 
 

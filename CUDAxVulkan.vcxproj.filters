@@ -26,5 +26,12 @@
     <ClInclude Include="v_swap_chain.hpp">
       <Filter>Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="v_model.hpp">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\shader.frag" />
+    <None Include="shaders\shader.vert" />
   </ItemGroup>
 </Project>
