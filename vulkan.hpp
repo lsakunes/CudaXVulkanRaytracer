@@ -53,6 +53,7 @@ private:
     void createCommandBuffers();
     void drawFrame();
     void renderGameObjects(VkCommandBuffer commandBuffer);
+    void recordCommandBuffer(int imageIndex);
 
     V_Window v_window{ WIDTH, HEIGHT, "Hello Vulkan!" };
     V_Device v_device{ v_window };
@@ -129,37 +130,37 @@ void Vulkan::createCommandBuffers() {
     if (vkAllocateCommandBuffers(v_device.device(), &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("Error allocating command buffers");
     }
+}
 
-    for (int i = 0; i < commandBuffers.size(); i++) {
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+void Vulkan::recordCommandBuffer(int imageIndex) {
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-        if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("failed to being recording command buffer");
-        }
+    if (vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("failed to being recording command buffer");
+    }
 
-        VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = v_swapchain.getRenderPass();
-        renderPassInfo.framebuffer = v_swapchain.getFrameBuffer(i);
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = v_swapchain.getRenderPass();
+    renderPassInfo.framebuffer = v_swapchain.getFrameBuffer(imageIndex);
 
-        renderPassInfo.renderArea.offset = { 0,0 };
-        renderPassInfo.renderArea.extent = v_swapchain.getSwapChainExtent();
+    renderPassInfo.renderArea.offset = { 0,0 };
+    renderPassInfo.renderArea.extent = v_swapchain.getSwapChainExtent();
 
-        std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color = { 0, 0, 0, 1.0f };
-        clearValues[1].depthStencil = { 1.0f, 0 };
-        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-        renderPassInfo.pClearValues = clearValues.data();
+    std::array<VkClearValue, 2> clearValues{};
+    clearValues[0].color = { 0, 0, 0, 1.0f };
+    clearValues[1].depthStencil = { 1.0f, 0 };
+    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    renderPassInfo.pClearValues = clearValues.data();
 
-        vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // TODO: contents inline might change to use secondary command buffers with cuda?? maybe??
+    vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // TODO: contents inline might change to use secondary command buffers with cuda?? maybe??
 
-        renderGameObjects(commandBuffers[i]);
+    renderGameObjects(commandBuffers[imageIndex]);
 
-        vkCmdEndRenderPass(commandBuffers[i]);
-        if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to record command buffer");
-        }
+    vkCmdEndRenderPass(commandBuffers[imageIndex]);
+    if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
+        throw std::runtime_error("failed to record command buffer");
     }
 }
 
@@ -172,6 +173,7 @@ void Vulkan::drawFrame() {
         throw std::runtime_error("failed to acquire swap chain image");
     }
 
+    recordCommandBuffer(imageIndex);
     result = v_swapchain.submitCommandBuffers(&commandBuffers[imageIndex], &imageIndex);
 
     if (result != VK_SUCCESS) {
