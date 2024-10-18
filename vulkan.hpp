@@ -57,7 +57,7 @@ private:
 
     V_Window v_window{ WIDTH, HEIGHT, "Hello Vulkan!" };
     V_Device v_device{ v_window };
-    V_SwapChain v_swapchain{ v_device, v_window.getExtent() };
+    std::unique_ptr <V_SwapChain> v_swapchain;
     std::unique_ptr<V_Pipeline> v_pipeline;
     VkPipelineLayout pipelineLayout;
     std::vector<VkCommandBuffer> commandBuffers;
@@ -95,9 +95,9 @@ void Vulkan::createPipelineLayout() {
 
 void Vulkan::createPipeline() {
     PipelineConfigInfo pipelineConfig = PipelineConfigInfo{};
-    V_Pipeline::defaultPipelineConfigInfoX(pipelineConfig, v_swapchain.width(), v_swapchain.height());
+    V_Pipeline::defaultPipelineConfigInfo(pipelineConfig);
 
-    pipelineConfig.renderPass = v_swapchain.getRenderPass();
+    pipelineConfig.renderPass = v_swapchain->getRenderPass();
     pipelineConfig.pipelineLayout = pipelineLayout;
 
     v_pipeline = std::make_unique<V_Pipeline>(
@@ -119,7 +119,7 @@ Vulkan::~Vulkan() {
 }
 
 void Vulkan::createCommandBuffers() {
-    commandBuffers.resize(v_swapchain.imageCount());
+    commandBuffers.resize(v_swapchain->imageCount());
 
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -154,6 +154,18 @@ void Vulkan::recordCommandBuffer(int imageIndex) {
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
 
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    VkExtent2D extent = v_swapchain->getSwapChainExtent();
+    viewport.width = static_cast<float>(extent.width);
+    viewport.height = static_cast<float>(extent.height);
+    VkRect2D scissor{ {0,0}, v_swapchain->GetSwapChainExtent() };
+    vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &viewport);
+    vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
+
+
+
     vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // TODO: contents inline might change to use secondary command buffers with cuda?? maybe??
 
     renderGameObjects(commandBuffers[imageIndex]);
@@ -169,13 +181,21 @@ void Vulkan::drawFrame() {
     uint32_t imageIndex;
     auto result = v_swapchain.acquireNextImage(&imageIndex);
 
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        recreateSwapChain();
+        return;
+    }
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw std::runtime_error("failed to acquire swap chain image");
     }
 
     recordCommandBuffer(imageIndex);
     result = v_swapchain.submitCommandBuffers(&commandBuffers[imageIndex], &imageIndex);
-
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || v_window.wasWindowResized()) {
+        v_window.resetWindowResizedFlag();
+        recreateSwapChain();
+        return;
+    }
     if (result != VK_SUCCESS) {
         throw std::runtime_error("failed to present swap chain image");
     }
@@ -185,7 +205,7 @@ void Vulkan::renderGameObjects(VkCommandBuffer commandBuffer) {
     v_pipeline->bindGraphics(commandBuffer);
 
     for (auto& obj : gameObjects) {
-        obj.transform2d.rotation = glm::mod(obj.transform2d.rotation + 0.01f, glm::two_pi<float>());
+        obj.transform2d.rotation = glm::mod(obj.transform2d.rotation + 0.1f, glm::two_pi<float>());
         SimplePushConstantData push{};
         push.objTransform = obj.transform2d.mat2();
         push.color = obj.color;
@@ -213,7 +233,7 @@ void Vulkan::loadGameObjects() {
 
     auto triangle = V_GameObject::createGameObject();
     triangle.model = v_model;
-    triangle.color = { .1f, .8f, .1f };
+    triangle.color = { 0.f, 1.f, .5f };
     triangle.transform2d.translation.x = .2f;
     triangle.transform2d.scale = { 2.f, .5f };
     triangle.transform2d.rotation = .25f * glm::two_pi<float>();
