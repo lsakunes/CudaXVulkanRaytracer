@@ -146,14 +146,12 @@ void V_Pipeline::createGraphicsPipeline(
 	pipelineInfo.renderPass = configInfo.renderPass;
 	pipelineInfo.subpass = configInfo.subpass;
 
-	// OPTIMIZATION 
 	// TODO: Can be less expensive for gpu to create
 	// a new pipeline by deriving from existing one
 	pipelineInfo.basePipelineIndex = -1;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-	// OPTIMIZATION
-	// TODO: second argument is pipeline cache 
+	// TODO: second argument is pipeline cache; investigate?
 	if (vkCreateGraphicsPipelines(v_device.device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create pipeline");
 	}

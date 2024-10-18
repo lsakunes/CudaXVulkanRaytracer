@@ -29,6 +29,9 @@
     <ClInclude Include="v_model.hpp">
       <Filter>Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="v_gameobject.hpp">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag" />
