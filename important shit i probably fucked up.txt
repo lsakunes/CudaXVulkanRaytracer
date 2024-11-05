@@ -1,0 +1,3 @@
+no default lib (search for default under linker and all options)
+nvm it broke everything
+
