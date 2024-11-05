@@ -15,7 +15,9 @@ public:
     V_Renderer(const V_Renderer&) = delete;
     V_Renderer& operator=(const V_Renderer&) = delete;
 
-    VkRenderPass getSwapChainRenderPass() const { return v_swapchain->getRenderPass(); }
+    VkRenderPass getSwapChainRenderPass() const { 
+        return v_swapchain->getRenderPass(); 
+    }
     bool isFrameInProgress() const { return isFrameStarted; }
 
     VkCommandBuffer getCurrentCommandBuffer() const {
@@ -46,7 +48,7 @@ private:
     std::vector<VkCommandBuffer> commandBuffers;
 
     uint32_t currentImageIndex;
-    int currentFrameIndex = 0;
+    int currentFrameIndex{ 0 };
     bool isFrameStarted = false;
 };
 }

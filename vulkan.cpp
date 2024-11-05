@@ -3,7 +3,6 @@
 namespace v {
 void Vulkan::run() {
     SimpleRenderSystem simpleRenderSystem{ v_device, v_renderer.getSwapChainRenderPass() };
-
     while (!v_window.shouldClose()) {
         glfwPollEvents();
 

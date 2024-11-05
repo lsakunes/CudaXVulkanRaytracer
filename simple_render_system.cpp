@@ -2,7 +2,6 @@
 
 namespace v{
 void SimpleRenderSystem::createPipelineLayout() {
-
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     pushConstantRange.offset = 0;
@@ -36,8 +35,8 @@ void SimpleRenderSystem::createPipeline(VkRenderPass renderPass) {
 
     v_pipeline = std::make_unique<V_Pipeline>(
         v_device,
-        "./shaders/vert.spv",
-        "./shaders/frag.spv",
+        "C:/Users/senuk/source/repos/Raytracing/CUDA_Vulkan_Interop/CudaVulkanInterop/shaders/vert.spv",
+        "C:/Users/senuk/source/repos/Raytracing/CUDA_Vulkan_Interop/CudaVulkanInterop/shaders/frag.spv",
         pipelineConfig);
 }
 
@@ -49,7 +48,7 @@ void SimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuffer, std::v
     v_pipeline->bindGraphics(commandBuffer);
 
     for (auto& obj : gameObjects) {
-        obj.transform2d.rotation = glm::mod(obj.transform2d.rotation + 0.01f, glm::two_pi<float>());
+        obj.transform2d.rotation = glm::mod(obj.transform2d.rotation + 0.001f, glm::two_pi<float>());
 
         SimplePushConstantData push{};
         push.offset = obj.transform2d.translation;
