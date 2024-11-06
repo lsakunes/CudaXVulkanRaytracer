@@ -16,8 +16,9 @@ namespace v {
 class V_Model {
 public:
 
+	// always remember to update VertexInputAttributeDescription in model.cpp
 	struct Vertex { // TODO: restructuring memory to be multiple structs or smth might be faster
-		glm::vec2 position;
+		glm::vec3 position;
 		glm::vec3 color;
 
 		static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
