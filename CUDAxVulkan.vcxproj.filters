@@ -42,6 +42,10 @@
     <ClCompile Include="vulkan.cpp">
       <Filter>Vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="v_camera.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="keyboard_movement_controller.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="v_window.hpp">
@@ -62,6 +66,11 @@
     <ClInclude Include="v_gameobject.hpp">
       <Filter>Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="v_camera.hpp">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="keyboard_movement_controller.hpp" />
+    <ClInclude Include="v_utils.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag" />

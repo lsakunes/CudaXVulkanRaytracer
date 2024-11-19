@@ -10,13 +10,14 @@
 
 #include "v_pipeline.hpp"
 #include "v_gameobject.hpp"
+#include "v_camera.hpp"
 
 namespace v {
 
 // TODO: use for camera
 struct SimplePushConstantData {  // size must be multiple of 4
     glm::mat4 transform{1.f};
-    alignas(16) glm::vec3 color;
+    glm::mat4 modelMatrix{1.f};
 };
 
 class SimpleRenderSystem {
@@ -28,7 +29,7 @@ public:
     SimpleRenderSystem(const SimpleRenderSystem&) = delete;
     SimpleRenderSystem& operator=(const SimpleRenderSystem&) = delete;
 
-    void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<V_GameObject>& gameObjects);
+    void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<V_GameObject>& gameObjects, const V_Camera& camera);
 
 private:
     void createPipelineLayout();

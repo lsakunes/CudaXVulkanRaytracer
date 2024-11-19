@@ -1,4 +1,11 @@
 no default lib (search for default under linker and all options)
 nvm it broke everything
 
-current matrix system is 2D affine transformation
+current matrix system is 2D affine transformation https://youtu.be/0X_kRtyVzm4?si=BW8G4IKiMnqOdpMI
+
+realtime path tracing: https://www.youtube.com/watch?v=zD9kS1nOuyU
+don't sample every pixel
+
+use raytracing for mirror reflection
+
+ReSTIR

@@ -44,16 +44,16 @@ SimpleRenderSystem::~SimpleRenderSystem() {
     vkDestroyPipelineLayout(v_device.device(), pipelineLayout, nullptr);
 }
 
-void SimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuffer, std::vector<V_GameObject>& gameObjects) {
+void SimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuffer, std::vector<V_GameObject>& gameObjects, const V_Camera& camera) {
     v_pipeline->bindGraphics(commandBuffer);
 
-    for (auto& obj : gameObjects) {
-        obj.transform.rotation.y = glm::mod(obj.transform.rotation.y + 0.001f, glm::two_pi<float>());
-        obj.transform.rotation.x = glm::mod(obj.transform.rotation.x + 0.001f, glm::two_pi<float>());
+    auto projectionView = camera.getProjection() * camera.getView();
 
+    for (auto& obj : gameObjects) {
         SimplePushConstantData push{};
-        push.color = obj.color;
-        push.transform = obj.transform.mat4();
+        auto modelMatrix = obj.transform.mat4();
+        push.transform = projectionView * modelMatrix; //TODO: move camera projection to uniform buffer to calculate on gpu
+        push.modelMatrix = modelMatrix;
 
         vkCmdPushConstants(
             commandBuffer,
