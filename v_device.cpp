@@ -72,7 +72,7 @@ void V_Device::createInstance() {
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "Vulkan App";
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.pEngineName = "No Engine";
+    appInfo.pEngineName = "Hyperdrive Engine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.apiVersion = VK_API_VERSION_1_0;
 
@@ -117,8 +117,10 @@ void V_Device::pickPhysicalDevice() {
     for (const auto& device : devices) {
         if (isDeviceSuitable(device)) {
             physicalDevice = device;
+            std::cout << "found device\n";
             break;
         }
+        std::cout << "rejected device\n";
     }
 
     if (physicalDevice == VK_NULL_HANDLE) {
@@ -145,7 +147,7 @@ void V_Device::createLogicalDevice() {
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
-    VkPhysicalDeviceFeatures deviceFeatures = {};
+    VkPhysicalDeviceFeatures deviceFeatures = {}; // TODO: check if the interop needs some features? I don't think it does
     deviceFeatures.samplerAnisotropy = VK_TRUE;
 
     VkDeviceCreateInfo createInfo = {};
@@ -205,6 +207,9 @@ bool V_Device::isDeviceSuitable(VkPhysicalDevice device) {
 
     VkPhysicalDeviceFeatures supportedFeatures;
     vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+    std::cout << "device?\n";
+    std::cout << indices.isComplete() << "\n" << extensionsSupported << "\n" << swapChainAdequate << "\n" <<
+        supportedFeatures.samplerAnisotropy << "\n";
 
     return indices.isComplete() && extensionsSupported && swapChainAdequate &&
         supportedFeatures.samplerAnisotropy;
@@ -257,6 +262,22 @@ bool V_Device::checkValidationLayerSupport() {
     return true;
 }
 
+void addExtension(const char* extension, std::vector<const char*>& extensions) {
+    uint32_t count = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr);
+    std::vector<VkExtensionProperties> availableExtensions(count);
+    vkEnumerateInstanceExtensionProperties(nullptr, &count, availableExtensions.data());
+
+    // Checking for support of VK_KHR_bind_memory2
+    for (uint32_t i = 0; i < count; i++) {
+        if (strcmp(extension, availableExtensions[i].extensionName) == 0) {
+            extensions.push_back(extension);
+            return;
+        }
+    }
+    std::cout << extension << "\n";
+}
+
 std::vector<const char*> V_Device::getRequiredExtensions() {
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions;
@@ -264,8 +285,17 @@ std::vector<const char*> V_Device::getRequiredExtensions() {
 
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
+
+    addExtension(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME, extensions);
+    addExtension(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME, extensions);
+
+    // https://stackoverflow.com/questions/55424875/use-vulkan-vkimage-as-a-cuda-cuarray said to use these? 
+    // TODO: examine what these extensions do
+    addExtension(VK_EXT_DEBUG_REPORT_EXTENSION_NAME, extensions);
+    addExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME, extensions);
+
     if (enableValidationLayers) {
-        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        addExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, extensions);
     }
 
     return extensions;
@@ -310,7 +340,9 @@ bool V_Device::checkDeviceExtensionSupport(VkPhysicalDevice device) {
     for (const auto& extension : availableExtensions) {
         requiredExtensions.erase(extension.extensionName);
     }
-
+    for (auto extension : requiredExtensions) {
+        std::cout << "Missing " << extension << "\n";
+    }
     return requiredExtensions.empty();
 }
 

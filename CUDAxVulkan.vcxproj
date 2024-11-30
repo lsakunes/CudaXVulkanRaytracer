@@ -106,12 +106,14 @@
     <CudaCompile Include="kernel.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="cuda_render_system.cpp" />
     <ClCompile Include="keyboard_movement_controller.cpp" />
     <ClCompile Include="simple_render_system.cpp" />
     <ClCompile Include="simple_render_system.hpp" />
     <ClCompile Include="vulkan.cpp" />
     <ClCompile Include="v_camera.cpp" />
     <ClCompile Include="v_device.cpp" />
+    <ClCompile Include="v_exporter.hpp" />
     <ClCompile Include="v_model.cpp" />
     <ClCompile Include="v_pipeline.cpp" />
     <ClCompile Include="v_renderer.cpp" />
@@ -121,6 +123,7 @@
     <ClCompile Include="v_window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cuda_render_system.hpp" />
     <ClInclude Include="keyboard_movement_controller.hpp" />
     <ClInclude Include="v_camera.hpp" />
     <ClInclude Include="v_gameobject.hpp" />

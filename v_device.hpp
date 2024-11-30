@@ -107,7 +107,24 @@ class V_Device {
   VkQueue presentQueue_;
 
   const std::vector<const char *> validationLayers = {"VK_LAYER_KHRONOS_validation"};
-  const std::vector<const char *> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+  // https://stackoverflow.com/questions/55424875/use-vulkan-vkimage-as-a-cuda-cuarray
+  const std::vector<const char *> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
+        VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME };
+
+        // My cards don't support these extensions; I'm not sure if I need them?
+        // UPDATE: I def do need them for the forums I'm following, specifically memory file descriptors.
+        // I'll try to look for how to do it alternatively 
+        // VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME 
+        // VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME
+        // 
+        // WAIT 
+        // FD IS FOR NON-WINDOWS PLATFORMS
+        // I MIGHT BE GOOD
+        // 
+        // I need to us VK_KHR_external_memory_win32
+        //
 };
 
 }  // namespace v

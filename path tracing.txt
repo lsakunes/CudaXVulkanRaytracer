@@ -1,0 +1,6 @@
+path tracing:
+don't sample every pixel
+
+use raytracing for mirror reflection
+
+ReSTIR

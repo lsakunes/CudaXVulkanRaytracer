@@ -13,6 +13,15 @@ __global__ void addKernel(int *c, const int *a, const int *b)
     c[i] = a[i] + b[i];
 }
 
+//void importMemory() {
+//    CUDA_EXTERNAL_MEMORY_HANDLE_DESC memDesc = { };
+//    memDesc.type = CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD;
+//    memDesc.handle.fd = getVulkanMemoryHandle(device, memory);
+//    memDesc.size = extent.width * extent.height * 4;
+//
+//    CUDA_DRVAPI_CALL(cuImportExternalMemory(&externalMem, &memDesc));
+//}
+
 int main()
 {
     v::Vulkan app{};
