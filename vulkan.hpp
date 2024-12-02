@@ -16,6 +16,7 @@
 #include "v_gameobject.hpp"
 #include "v_renderer.hpp"
 #include "simple_render_system.hpp"
+#include "cuda_render_system.hpp"
 
 namespace v{
 
@@ -43,5 +44,3 @@ private:
 };
 }
 #endif
-
-// TODO: check max push constant size

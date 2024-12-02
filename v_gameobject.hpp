@@ -17,7 +17,7 @@ namespace v {
 struct TransformComponent{
 	glm::vec3 translation{};
 	float scale = 1.f;
-	glm::vec3 rotation{}; //TODO: check if we should use QUATERNIONS AAAAAAAAAAAAAAAAAA
+	glm::vec3 rotation{}; //TODO: quaternions
 
 	// translate * Ry * Rx * Rz * scale
 	// tait-bryan angles YXZ

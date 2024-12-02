@@ -88,7 +88,7 @@ void V_Device::createInstance() {
     if (enableValidationLayers) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
-
+          
         populateDebugMessengerCreateInfo(debugCreateInfo);
         createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
     }
@@ -147,7 +147,7 @@ void V_Device::createLogicalDevice() {
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
-    VkPhysicalDeviceFeatures deviceFeatures = {}; // TODO: check if the interop needs some features? I don't think it does
+    VkPhysicalDeviceFeatures deviceFeatures = {}; 
     deviceFeatures.samplerAnisotropy = VK_TRUE;
 
     VkDeviceCreateInfo createInfo = {};
@@ -290,7 +290,6 @@ std::vector<const char*> V_Device::getRequiredExtensions() {
     addExtension(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME, extensions);
 
     // https://stackoverflow.com/questions/55424875/use-vulkan-vkimage-as-a-cuda-cuarray said to use these? 
-    // TODO: examine what these extensions do
     addExtension(VK_EXT_DEBUG_REPORT_EXTENSION_NAME, extensions);
     addExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME, extensions);
 

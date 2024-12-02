@@ -14,7 +14,6 @@
 
 namespace v {
 
-// TODO: use for camera
 struct SimplePushConstantData {  // size must be multiple of 4
     glm::mat4 transform{1.f};
     glm::mat4 modelMatrix{1.f};
@@ -42,6 +41,5 @@ private:
 
 };
 }
-// TODO: check max push constant size
 
 #endif

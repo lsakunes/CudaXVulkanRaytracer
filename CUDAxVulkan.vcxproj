@@ -113,7 +113,6 @@
     <ClCompile Include="vulkan.cpp" />
     <ClCompile Include="v_camera.cpp" />
     <ClCompile Include="v_device.cpp" />
-    <ClCompile Include="v_exporter.hpp" />
     <ClCompile Include="v_model.cpp" />
     <ClCompile Include="v_pipeline.cpp" />
     <ClCompile Include="v_renderer.cpp" />

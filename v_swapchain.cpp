@@ -119,7 +119,7 @@ VkResult V_SwapChain::submitCommandBuffers(
     return result;
 }
 
-void V_SwapChain::createSwapChain() { //TODO: and here
+void V_SwapChain::createSwapChain() {
     SwapChainSupportDetails swapChainSupport = device.getSwapChainSupport();
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);

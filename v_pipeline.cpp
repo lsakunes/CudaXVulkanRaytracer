@@ -68,7 +68,7 @@ void V_Pipeline::createGraphicsPipeline(
 
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipelineInfo.stageCount = 2; // TODO: different with cuda? check out what to do with stages later
+	pipelineInfo.stageCount = 2; 
 	pipelineInfo.pStages = shaderStages;
 	pipelineInfo.pVertexInputState = &vertexInputInfo;
 	pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;
@@ -83,12 +83,9 @@ void V_Pipeline::createGraphicsPipeline(
 	pipelineInfo.renderPass = configInfo.renderPass;
 	pipelineInfo.subpass = configInfo.subpass;
 
-	// TODO: Can be less expensive for gpu to create
-	// a new pipeline by deriving from existing one
 	pipelineInfo.basePipelineIndex = -1;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-	// TODO: second argument is pipeline cache; investigate?
 	if (vkCreateGraphicsPipelines(v_device.device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create pipeline");
 	}
@@ -133,10 +130,10 @@ void V_Pipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo) {
 	// RASTERIZER
 	configInfo.rasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	configInfo.rasterizationInfo.depthClampEnable = VK_FALSE;
-	configInfo.rasterizationInfo.rasterizerDiscardEnable = VK_FALSE; // TODO: Discards all primitives before rasterization? Might be important
-	configInfo.rasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL; // TODO: We can draw wireframe using this! I think we should that would be cool
+	configInfo.rasterizationInfo.rasterizerDiscardEnable = VK_FALSE;
+	configInfo.rasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL; 
 	configInfo.rasterizationInfo.lineWidth = 1.0f;
-	configInfo.rasterizationInfo.cullMode = VK_CULL_MODE_NONE; // TODO: Backface culling leads to big performance benefits
+	configInfo.rasterizationInfo.cullMode = VK_CULL_MODE_NONE; 
 	configInfo.rasterizationInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
 	configInfo.rasterizationInfo.depthBiasEnable = VK_FALSE;
 

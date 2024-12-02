@@ -57,6 +57,7 @@ void V_Model::createVertexBuffers(const std::vector<Vertex>& vertices) {
 	vertexCount = static_cast<uint32_t>(vertices.size());
 	assert(vertexCount >= 3 && "Vertex count must be > 3");
 	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertexCount;
+	vertexBufferSize = bufferSize;
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
@@ -90,6 +91,7 @@ void V_Model::createIndexBuffers(const std::vector<uint32_t>& indices) {
 	if (!hasIndexBuffer) return;
 
 	VkDeviceSize bufferSize = sizeof(indices[0]) * indexCount;
+	indexBufferSize = bufferSize;
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;

@@ -111,7 +111,9 @@ class V_Device {
   // https://stackoverflow.com/questions/55424875/use-vulkan-vkimage-as-a-cuda-cuarray
   const std::vector<const char *> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
-        VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME };
+        VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME, //WE NEED EXTERNAL WIN32 EXTENSION THINGY
+      "VK_KHR_external_memory_win32"
+  };
 
         // My cards don't support these extensions; I'm not sure if I need them?
         // UPDATE: I def do need them for the forums I'm following, specifically memory file descriptors.

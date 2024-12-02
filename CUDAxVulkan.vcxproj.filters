@@ -46,9 +46,6 @@
       <Filter>Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="keyboard_movement_controller.cpp" />
-    <ClCompile Include="v_exporter.hpp">
-      <Filter>Vulkan</Filter>
-    </ClCompile>
     <ClCompile Include="cuda_render_system.cpp">
       <Filter>Vulkan</Filter>
     </ClCompile>
@@ -77,7 +74,9 @@
     </ClInclude>
     <ClInclude Include="keyboard_movement_controller.hpp" />
     <ClInclude Include="v_utils.hpp" />
-    <ClInclude Include="cuda_render_system.hpp" />
+    <ClInclude Include="cuda_render_system.hpp">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag" />

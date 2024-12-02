@@ -49,6 +49,10 @@ public:
 
 	void bind(VkCommandBuffer commandBuffer);
 	void draw(VkCommandBuffer commandBuffer);
+	VkDeviceMemory getVertexBufferMemory() { return vertexBufferMemory; }
+	VkDeviceMemory getIndexBufferMemory() { return indexBufferMemory; }
+	size_t getVertexBufferSize() { return vertexBufferSize; }
+	size_t getIndexBufferSize() { return indexBufferSize; }
 
 
 private:
@@ -59,11 +63,13 @@ private:
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
 	uint32_t vertexCount;
+	size_t vertexBufferSize;
 
 	bool hasIndexBuffer = false;
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
 	uint32_t indexCount;
+	size_t indexBufferSize;
 
 };
 }

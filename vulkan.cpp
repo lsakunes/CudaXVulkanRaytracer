@@ -3,8 +3,12 @@
 #include <chrono>
 
 namespace v {
-void Vulkan::run() {
+__global__ void Vulkan::run() {
     SimpleRenderSystem simpleRenderSystem{ v_device, v_renderer.getSwapChainRenderPass() };
+    //TODO: use cudarendersystem
+    CudaRenderSystem cudaRenderSystem{ v_device };
+
+    
     V_Camera camera{};
     camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
 
@@ -15,6 +19,9 @@ void Vulkan::run() {
 
     while (!v_window.shouldClose()) {
         glfwPollEvents();
+
+        // give cuda the buffers here?
+        // and get a handle for a semaphore
 
         std::chrono::steady_clock::time_point newTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
@@ -27,8 +34,11 @@ void Vulkan::run() {
         //camera.setOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
         camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 10.f);
         if (auto commandBuffer = v_renderer.beginFrame()) {
-            v_renderer.beginSwapChainRenderPass(commandBuffer);
-            simpleRenderSystem.renderGameObjects(commandBuffer, gameObjects, camera);
+            v_renderer.beginSwapChainRenderPass(commandBuffer); 
+
+            // on semaphore signal
+            simpleRenderSystem.renderGameObjects(commandBuffer, gameObjects, camera); // TODO: swap out with something that accepts cuda's rendered image then displays it
+
             v_renderer.endSwapChainRenderPass(commandBuffer);
             v_renderer.endFrame();
         }

@@ -53,7 +53,7 @@ private:
 	void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
 
 	V_Device& v_device;
-	VkPipeline graphicsPipeline; // TODO: there's also a raytracing and a compute pipeline. idk if we're gonna need it with the interop but check later
+	VkPipeline graphicsPipeline; 
 	VkShaderModule vertShaderModule;
 	VkShaderModule fragShaderModule;
 };

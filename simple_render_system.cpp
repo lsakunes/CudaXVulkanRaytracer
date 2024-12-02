@@ -10,7 +10,7 @@ void SimpleRenderSystem::createPipelineLayout() {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 0;
-    pipelineLayoutInfo.pSetLayouts = nullptr; // TODO: textures and other buffers
+    pipelineLayoutInfo.pSetLayouts = nullptr;
     pipelineLayoutInfo.pushConstantRangeCount = 1;
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
     if (vkCreatePipelineLayout(v_device.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
@@ -52,7 +52,7 @@ void SimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuffer, std::v
     for (auto& obj : gameObjects) {
         SimplePushConstantData push{};
         auto modelMatrix = obj.transform.mat4();
-        push.transform = projectionView * modelMatrix; //TODO: move camera projection to uniform buffer to calculate on gpu
+        push.transform = projectionView * modelMatrix;
         push.modelMatrix = modelMatrix;
 
         vkCmdPushConstants(
