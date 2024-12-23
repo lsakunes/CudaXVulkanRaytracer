@@ -28,6 +28,7 @@ namespace v {
 V_Model::V_Model(V_Device& device, const V_Model::Builder &builder) : v_device{ device } {
 	createVertexBuffers(builder.vertices);
 	createIndexBuffers(builder.indices);
+	createExternalVertexBuffer(builder.vertices);
 }
 
 V_Model::~V_Model() {
@@ -38,12 +39,57 @@ V_Model::~V_Model() {
 	// Allocate bigger chunks and give parts to different resources 
 	//
 	vkDestroyBuffer(v_device.device(), vertexBuffer, nullptr);
+	vkDestroyBuffer(v_device.device(), extVertexBuffer, nullptr);
 	vkFreeMemory(v_device.device(), vertexBufferMemory, nullptr);
+	vkFreeMemory(v_device.device(), extVertexBufferMemory, nullptr);
 	if (hasIndexBuffer) {
 		vkDestroyBuffer(v_device.device(), indexBuffer, nullptr);
 		vkFreeMemory(v_device.device(), indexBufferMemory, nullptr);
 	}
+}
 
+
+void V_Model::createExternalVertexBuffer(const std::vector<Vertex>& vertices) {
+	vertexCount = static_cast<uint32_t>(vertices.size());
+	assert(vertexCount >= 3 && "Vertex count must be > 3");
+	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertexCount;
+	vertexBufferSize = bufferSize;
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+
+	v_device.createBuffer(
+		bufferSize,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingBuffer,
+		stagingBufferMemory);
+
+	void* data;
+	vkMapMemory(v_device.device(), stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
+	vkUnmapMemory(v_device.device(), stagingBufferMemory);
+
+	VkExternalMemoryBufferCreateInfo extBufferCreateInfo{};
+	extBufferCreateInfo.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO;
+	extBufferCreateInfo.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+	extBufferCreateInfo.pNext = VK_NULL_HANDLE;
+
+	v_device.createExtBuffer(
+		bufferSize,
+		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		extVertexBuffer,
+		extVertexBufferMemory,
+		extBufferCreateInfo);
+	v_device.copyBuffer(stagingBuffer, extVertexBuffer, bufferSize);
+
+	vkDestroyBuffer(v_device.device(), stagingBuffer, nullptr);
+	vkFreeMemory(v_device.device(), stagingBufferMemory, nullptr);
+}
+
+VkBuffer V_Model::createExternalIndexBuffer(const std::vector<uint32_t>& indices) {
+	return VkBuffer{};
 }
 
 std::unique_ptr<V_Model> V_Model::createModelFromFile(V_Device& device, const std::string& filepath) {

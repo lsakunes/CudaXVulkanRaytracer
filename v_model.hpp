@@ -49,19 +49,24 @@ public:
 
 	void bind(VkCommandBuffer commandBuffer);
 	void draw(VkCommandBuffer commandBuffer);
-	VkDeviceMemory getVertexBufferMemory() { return vertexBufferMemory; }
-	VkDeviceMemory getIndexBufferMemory() { return indexBufferMemory; }
+	VkDeviceMemory getExtVertexBufferMemory() { return extVertexBufferMemory; }
 	size_t getVertexBufferSize() { return vertexBufferSize; }
 	size_t getIndexBufferSize() { return indexBufferSize; }
-
+	uint32_t getVertexCount() { return vertexCount; }
+	uint32_t getIndexCount() { return indexCount; }
 
 private:
 	void createVertexBuffers(const std::vector<Vertex>& vertices);
 	void createIndexBuffers(const std::vector<uint32_t>& indices);
 
+	void createExternalVertexBuffer(const std::vector<Vertex>& vertices);
+	VkBuffer createExternalIndexBuffer(const std::vector<uint32_t>& indices);
+
 	V_Device& v_device;
 	VkBuffer vertexBuffer;
+	VkBuffer extVertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
+	VkDeviceMemory extVertexBufferMemory;
 	uint32_t vertexCount;
 	size_t vertexBufferSize;
 

@@ -120,6 +120,7 @@
     <ClCompile Include="vulkan.hpp" />
     <ClCompile Include="v_swapchain.cpp" />
     <ClCompile Include="v_window.cpp" />
+    <ClCompile Include="windowsSecurity.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cuda_render_system.hpp" />
@@ -132,6 +133,7 @@
     <ClInclude Include="v_pipeline.hpp" />
     <ClInclude Include="v_utils.hpp" />
     <ClInclude Include="v_window.hpp" />
+    <ClInclude Include="windowsSecurity.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag" />

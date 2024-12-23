@@ -32,6 +32,7 @@ public:
     void endFrame();
     void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
     void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
+    void setSwapchainExt(VkSemaphore cudaUpdateVkSemaphore, VkSemaphore vkUpdateCudaSemaphore) { v_swapchain->setExtSemaphores(cudaUpdateVkSemaphore, vkUpdateCudaSemaphore); }
 
     int getFrameIndex() const {
         assert(isFrameStarted && "Can't call getFrameIndex while frame is not in progress");

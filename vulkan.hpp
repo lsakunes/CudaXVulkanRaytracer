@@ -17,6 +17,7 @@
 #include "v_renderer.hpp"
 #include "simple_render_system.hpp"
 #include "cuda_render_system.hpp"
+#include "windowsSecurity.hpp"
 
 namespace v{
 
@@ -34,12 +35,15 @@ public:
     void run();
 private:
     void loadGameObjects();
+    void createSyncObjectsExt();
 
     V_Window v_window{ WIDTH, HEIGHT, "Hello Vulkan!" };
     V_Device v_device{ v_window };
     V_Renderer v_renderer{ v_window, v_device };
 
     std::vector<V_GameObject> gameObjects;
+
+    VkSemaphore cudaUpdateVkSemaphore, vkUpdateCudaSemaphore;
 
 };
 }

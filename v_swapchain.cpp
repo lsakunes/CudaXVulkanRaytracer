@@ -7,7 +7,9 @@ V_SwapChain::V_SwapChain(V_Device& deviceRef, VkExtent2D extent)
     init();
 }
 
-V_SwapChain::V_SwapChain(V_Device& deviceRef, VkExtent2D extent, std::shared_ptr<V_SwapChain> previous) : device(deviceRef), windowExtent{ extent }, oldSwapChain{ previous } {
+V_SwapChain::V_SwapChain(V_Device& deviceRef, VkExtent2D extent, std::shared_ptr<V_SwapChain> previous)
+    : device(deviceRef), windowExtent{ extent }, oldSwapChain{ previous } {
+    setExtSemaphores(oldSwapChain->getCudaHandledSemaphore(), oldSwapChain->getVkHandledSemaphore());
     init();
     oldSwapChain = nullptr;
 }
@@ -81,17 +83,17 @@ VkResult V_SwapChain::submitCommandBuffers(
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
-    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    submitInfo.waitSemaphoreCount = 1;
+    VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame], cudaUpdateVkSemaphore };
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT };
+    submitInfo.waitSemaphoreCount = 2;
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
 
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = buffers;
 
-    VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
-    submitInfo.signalSemaphoreCount = 1;
+    VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame], vkUpdateCudaSemaphore };
+    submitInfo.signalSemaphoreCount = 2;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
     vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);

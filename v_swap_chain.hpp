@@ -22,7 +22,7 @@ class V_SwapChain {
  public:
   static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
-  V_SwapChain(V_Device &deviceRef, VkExtent2D windowExtent); 
+  V_SwapChain(V_Device &deviceRef, VkExtent2D windowExtent);
   V_SwapChain(V_Device& deviceRef, VkExtent2D windowExtent, std::shared_ptr<V_SwapChain> previous);
   ~V_SwapChain();
 
@@ -38,6 +38,9 @@ class V_SwapChain {
   VkSwapchainKHR getSwapChainKHR() { return swapChain; }
   uint32_t width() { return swapChainExtent.width; }
   uint32_t height() { return swapChainExtent.height; }
+  void setExtSemaphores(VkSemaphore cudaHandledSemaphore, VkSemaphore vkHandledSemaphore) { cudaUpdateVkSemaphore = cudaHandledSemaphore; vkUpdateCudaSemaphore = vkHandledSemaphore; }
+  VkSemaphore getCudaHandledSemaphore() { return cudaUpdateVkSemaphore; }
+  VkSemaphore getVkHandledSemaphore() { return vkUpdateCudaSemaphore; }
 
   float extentAspectRatio() {
     return static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height);
@@ -90,6 +93,7 @@ class V_SwapChain {
   std::vector<VkSemaphore> renderFinishedSemaphores;
   std::vector<VkFence> inFlightFences;
   std::vector<VkFence> imagesInFlight;
+  VkSemaphore cudaUpdateVkSemaphore, vkUpdateCudaSemaphore;
   size_t currentFrame = 0;
 };
 }  // namespace lve

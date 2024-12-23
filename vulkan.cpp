@@ -5,8 +5,7 @@
 namespace v {
 __global__ void Vulkan::run() {
     SimpleRenderSystem simpleRenderSystem{ v_device, v_renderer.getSwapChainRenderPass() };
-    //TODO: use cudarendersystem
-    CudaRenderSystem cudaRenderSystem{ v_device };
+        CudaRenderSystem cudaRenderSystem{ v_device, cudaUpdateVkSemaphore, vkUpdateCudaSemaphore, &gameObjects };
 
     
     V_Camera camera{};
@@ -22,6 +21,7 @@ __global__ void Vulkan::run() {
 
         // give cuda the buffers here?
         // and get a handle for a semaphore
+        cudaRenderSystem.c_trace();
 
         std::chrono::steady_clock::time_point newTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
@@ -34,6 +34,7 @@ __global__ void Vulkan::run() {
         //camera.setOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
         camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 10.f);
         if (auto commandBuffer = v_renderer.beginFrame()) {
+
             v_renderer.beginSwapChainRenderPass(commandBuffer); 
 
             // on semaphore signal
@@ -47,9 +48,46 @@ __global__ void Vulkan::run() {
      vkDeviceWaitIdle(v_device.device());
 }
 
+void Vulkan::createSyncObjectsExt() {
+    VkSemaphoreCreateInfo semaphoreInfo = {};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    memset(&semaphoreInfo, 0, sizeof(semaphoreInfo));
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    WindowsSecurityAttributes winSecurityAttributes;
+
+    VkExportSemaphoreWin32HandleInfoKHR
+        vulkanExportSemaphoreWin32HandleInfoKHR = {};
+    vulkanExportSemaphoreWin32HandleInfoKHR.sType =
+        VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR;
+    vulkanExportSemaphoreWin32HandleInfoKHR.pNext = NULL;
+    vulkanExportSemaphoreWin32HandleInfoKHR.pAttributes =
+        &winSecurityAttributes;
+    vulkanExportSemaphoreWin32HandleInfoKHR.dwAccess =
+        DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE;
+    vulkanExportSemaphoreWin32HandleInfoKHR.name = (LPCWSTR)NULL;
+    VkExportSemaphoreCreateInfoKHR vulkanExportSemaphoreCreateInfo = {};
+    vulkanExportSemaphoreCreateInfo.sType =
+        VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO_KHR;
+    vulkanExportSemaphoreCreateInfo.pNext = &vulkanExportSemaphoreWin32HandleInfoKHR;
+    vulkanExportSemaphoreCreateInfo.handleTypes = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+    semaphoreInfo.pNext = &vulkanExportSemaphoreCreateInfo;
+
+    if (vkCreateSemaphore(v_device.device(), &semaphoreInfo, nullptr,
+        &cudaUpdateVkSemaphore) != VK_SUCCESS ||
+        vkCreateSemaphore(v_device.device(), &semaphoreInfo, nullptr,
+            &vkUpdateCudaSemaphore) != VK_SUCCESS) {
+        throw std::runtime_error(
+            "failed to create synchronization objects for a CUDA-Vulkan!");
+    }
+}
+
 
 Vulkan::Vulkan() {
+    createSyncObjectsExt();
     loadGameObjects();
+    v_renderer.setSwapchainExt(cudaUpdateVkSemaphore, vkUpdateCudaSemaphore);
 }
 
 Vulkan::~Vulkan() {}
