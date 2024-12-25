@@ -12,13 +12,7 @@
     <ClCompile Include="vulkan.hpp">
       <Filter>Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="simple_render_system.hpp">
-      <Filter>Vulkan</Filter>
-    </ClCompile>
     <ClCompile Include="v_renderer.hpp">
-      <Filter>Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="simple_render_system.cpp">
       <Filter>Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="v_device.cpp">
@@ -49,6 +43,10 @@
     <ClCompile Include="cuda_render_system.cpp">
       <Filter>Vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="windowsSecurity.cpp" />
+    <ClCompile Include="v_imageHandler.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="v_window.hpp">
@@ -77,6 +75,8 @@
     <ClInclude Include="cuda_render_system.hpp">
       <Filter>Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="windowsSecurity.hpp" />
+    <ClInclude Include="v_imageHandler.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag" />

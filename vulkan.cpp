@@ -4,8 +4,7 @@
 
 namespace v {
 __global__ void Vulkan::run() {
-    SimpleRenderSystem simpleRenderSystem{ v_device, v_renderer.getSwapChainRenderPass() };
-        CudaRenderSystem cudaRenderSystem{ v_device, cudaUpdateVkSemaphore, vkUpdateCudaSemaphore, &gameObjects };
+    CudaRenderSystem cudaRenderSystem{ v_device, cudaUpdateVkSemaphore, vkUpdateCudaSemaphore, &gameObjects, v_window.getExtent().height, v_window.getExtent().width};
 
     
     V_Camera camera{};
@@ -36,9 +35,6 @@ __global__ void Vulkan::run() {
         if (auto commandBuffer = v_renderer.beginFrame()) {
 
             v_renderer.beginSwapChainRenderPass(commandBuffer); 
-
-            // on semaphore signal
-            simpleRenderSystem.renderGameObjects(commandBuffer, gameObjects, camera); // TODO: swap out with something that accepts cuda's rendered image then displays it
 
             v_renderer.endSwapChainRenderPass(commandBuffer);
             v_renderer.endFrame();

@@ -57,7 +57,6 @@ class V_SwapChain {
  private:
   void createSwapChain();
   void createImageViews();
-  void createDepthResources();
   void createRenderPass();
   void createFramebuffers();
   void createSyncObjects();

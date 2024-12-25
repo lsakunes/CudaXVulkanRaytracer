@@ -85,6 +85,8 @@ class V_Device {
 
       VkPhysicalDeviceProperties properties;
 
+      VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+
      private:
     void createInstance();
     void setupDebugMessenger();
@@ -105,7 +107,6 @@ class V_Device {
 
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     V_Window &window;
     VkCommandPool commandPool;
 
