@@ -27,6 +27,7 @@
 
 namespace v {
 
+template<class Rgb>
 __device__ void plainUV(cudaSurfaceObject_t surface, int nWidth, int nHeight){
 	int x = (threadIdx.x + blockIdx.x * blockDim.x);
 	int y = (threadIdx.y + blockIdx.y * blockDim.y);
@@ -56,10 +57,26 @@ HANDLE CudaRenderSystem::getVkSemaphoreHandle(
 	return handle;
 }
 
+HANDLE CudaRenderSystem::getVkMemoryHandle(VkDeviceMemory device_memory) {
+	HANDLE handle = NULL;
+	std::cout << device_memory << "\n";
+	VkMemoryGetWin32HandleInfoKHR get_handle_info{ VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR, VK_NULL_HANDLE, device_memory, VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT };
+	vkGetMemoryWin32HandleKHR(v_device.device(), &get_handle_info, &handle);
+
+	if (vkGetMemoryWin32HandleKHR(v_device.device(), &get_handle_info, &handle) != VK_SUCCESS) {
+		std::cout << "getting memory handle failed\n";
+	}
+	std::cout << handle << "\n";
+	if (!handle || handle == INVALID_HANDLE_VALUE) {
+		std::cout << "bad handle\n";
+	}
+	return handle;
+}
+
 uint32_t CudaRenderSystem::c_findMemoryType(uint32_t typeFilter,
 	VkMemoryPropertyFlags properties) {
 	VkPhysicalDeviceMemoryProperties memProperties;
-	vkGetPhysicalDeviceMemoryProperties(v_device.physicalDevice, &memProperties);
+	vkGetPhysicalDeviceMemoryProperties(v_device.physicalDevice(), &memProperties);
 
 	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
 		if ((typeFilter & (1 << i)) &&
@@ -315,6 +332,20 @@ void CudaRenderSystem::c_waitVkSemaphore() {
 		&extVulkanHandledSemaphore, &extSemaphoreWaitParams, 1, streamToRun));
 }
 
+void CudaRenderSystem::c_importVkSemaphore() {
+	cudaExternalSemaphoreHandleDesc externalSemaphoreHandleDesc;
+	memset(&externalSemaphoreHandleDesc, 0,
+		sizeof(externalSemaphoreHandleDesc));
+	externalSemaphoreHandleDesc.type = cudaExternalSemaphoreHandleTypeOpaqueWin32;
+	externalSemaphoreHandleDesc.handle.win32.handle = getVkSemaphoreHandle(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT, cudaUpdateVkSemaphore);
+	externalSemaphoreHandleDesc.flags = 0;
+	checkCudaErrors(cudaImportExternalSemaphore(&extCudaHandledSemaphore, &externalSemaphoreHandleDesc));
+	externalSemaphoreHandleDesc.type = cudaExternalSemaphoreHandleTypeOpaqueWin32;
+	externalSemaphoreHandleDesc.handle.win32.handle = getVkSemaphoreHandle(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT, vkUpdateCudaSemaphore);
+	externalSemaphoreHandleDesc.flags = 0;
+	checkCudaErrors(cudaImportExternalSemaphore(&extVulkanHandledSemaphore, &externalSemaphoreHandleDesc));
+	printf("CUDA Imported Vulkan semaphore\n");
+}
 
 
 std::vector<VkVertexInputBindingDescription> CudaRenderSystem::C_Vertex::getBindingDescriptions() {

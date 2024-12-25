@@ -46,13 +46,15 @@ class V_Device {
 
       VkCommandPool getCommandPool() { return commandPool; }
       VkDevice device() { return device_; }
+      VkPhysicalDevice physicalDevice() { return physicalDevice_; }
+      VkInstance instance() { return instance_; }
       VkSurfaceKHR surface() { return surface_; }
       VkQueue graphicsQueue() { return graphicsQueue_; }
       VkQueue presentQueue() { return presentQueue_; }
 
-      SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(physicalDevice); }
+      SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(physicalDevice_); }
       uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-      QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(physicalDevice); }
+      QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(physicalDevice_); }
       VkFormat findSupportedFormat(
           const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
@@ -85,7 +87,6 @@ class V_Device {
 
       VkPhysicalDeviceProperties properties;
 
-      VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
      private:
     void createInstance();
@@ -105,7 +106,7 @@ class V_Device {
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 
-    VkInstance instance;
+    VkInstance instance_;
     VkDebugUtilsMessengerEXT debugMessenger;
     V_Window &window;
     VkCommandPool commandPool;
@@ -114,6 +115,7 @@ class V_Device {
     VkSurfaceKHR surface_;
     VkQueue graphicsQueue_;
     VkQueue presentQueue_;
+    VkPhysicalDevice physicalDevice_ = VK_NULL_HANDLE;
 
     const std::vector<const char *> validationLayers = {"VK_LAYER_KHRONOS_validation"};
 

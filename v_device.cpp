@@ -56,11 +56,11 @@ V_Device::~V_Device() {
     vkDestroyDevice(device_, nullptr);
 
     if (enableValidationLayers) {
-        DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+        DestroyDebugUtilsMessengerEXT(instance_, debugMessenger, nullptr);
     }
 
-    vkDestroySurfaceKHR(instance, surface_, nullptr);
-    vkDestroyInstance(instance, nullptr);
+    vkDestroySurfaceKHR(instance_, surface_, nullptr);
+    vkDestroyInstance(instance_, nullptr);
 }
 
 void V_Device::createInstance() {
@@ -97,7 +97,7 @@ void V_Device::createInstance() {
         createInfo.pNext = nullptr;
     }
 
-    if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
+    if (vkCreateInstance(&createInfo, nullptr, &instance_) != VK_SUCCESS) {
         throw std::runtime_error("failed to create instance!");
     }
 
@@ -106,33 +106,33 @@ void V_Device::createInstance() {
 
 void V_Device::pickPhysicalDevice() { // TODO: technically i should check if it supports cuda but vulkan always chooses my 3070 so i'm too lazy to add the check
     uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+    vkEnumeratePhysicalDevices(instance_, &deviceCount, nullptr);
     if (deviceCount == 0) {
         throw std::runtime_error("failed to find GPUs with Vulkan support!");
     }
     std::cout << "Device count: " << deviceCount << std::endl;
     std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+    vkEnumeratePhysicalDevices(instance_, &deviceCount, devices.data());
 
     for (const auto& device : devices) {
         if (isDeviceSuitable(device)) {
-            physicalDevice = device;
+            physicalDevice_ = device;
             std::cout << "found device\n";
             break;
         }
         std::cout << "rejected device\n";
     }
 
-    if (physicalDevice == VK_NULL_HANDLE) {
+    if (physicalDevice_ == VK_NULL_HANDLE) {
         throw std::runtime_error("failed to find a suitable GPU!");
     }
 
-    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+    vkGetPhysicalDeviceProperties(physicalDevice_, &properties);
     std::cout << "physical device: " << properties.deviceName << std::endl;
 }
 
 void V_Device::createLogicalDevice() {
-    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+    QueueFamilyIndices indices = findQueueFamilies(physicalDevice_);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily };
@@ -170,7 +170,7 @@ void V_Device::createLogicalDevice() {
         createInfo.enabledLayerCount = 0;
     }
 
-    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device_) != VK_SUCCESS) {
+    if (vkCreateDevice(physicalDevice_, &createInfo, nullptr, &device_) != VK_SUCCESS) {
         throw std::runtime_error("failed to create logical device!");
     }
 
@@ -192,7 +192,7 @@ void V_Device::createCommandPool() {
     }
 }
 
-void V_Device::createSurface() { window.createWindowSurface(instance, &surface_); }
+void V_Device::createSurface() { window.createWindowSurface(instance_, &surface_); }
 
 bool V_Device::isDeviceSuitable(VkPhysicalDevice device) {
     QueueFamilyIndices indices = findQueueFamilies(device);
@@ -232,7 +232,7 @@ void V_Device::setupDebugMessenger() {
     if (!enableValidationLayers) return;
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
-    if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+    if (CreateDebugUtilsMessengerEXT(instance_, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
         throw std::runtime_error("failed to set up debug messenger!");
     }
 }
@@ -407,7 +407,7 @@ VkFormat V_Device::findSupportedFormat(
     const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
     for (VkFormat format : candidates) {
         VkFormatProperties props;
-        vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
+        vkGetPhysicalDeviceFormatProperties(physicalDevice_, format, &props);
 
         if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
             return format;
@@ -422,7 +422,7 @@ VkFormat V_Device::findSupportedFormat(
 
 uint32_t V_Device::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice_, &memProperties);
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
         if ((typeFilter & (1 << i)) &&
             (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {

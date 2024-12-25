@@ -41,7 +41,7 @@ public:
     }
 
     CudaRenderSystem(
-        V_Device& device, VkInstance instance, VkSemaphore cudaToVkSemaphore, VkSemaphore vkToCudaSemaphore,
+        V_Device& device, VkSemaphore cudaToVkSemaphore, VkSemaphore vkToCudaSemaphore,
         std::vector<V_GameObject> *objects, uint32_t h, uint32_t w) : height(h), width(w),
         v_device(device), cudaUpdateVkSemaphore(cudaToVkSemaphore), 
         vkUpdateCudaSemaphore(vkToCudaSemaphore), gameObjects(objects) {
@@ -56,18 +56,18 @@ public:
 
         vkGetMemoryWin32HandleKHR =
             (PFN_vkGetMemoryWin32HandleKHR)vkGetInstanceProcAddr(
-                instance, "vkGetMemoryWin32HandleKHR");
+                v_device.instance(), "vkGetMemoryWin32HandleKHR");
         if (vkGetMemoryWin32HandleKHR == NULL) {
             throw std::runtime_error(
                 "Vulkan: Proc address for \"vkGetMemoryWin32HandleKHR\" not "
                 "found.\n");
         }
 
-        vkGetMemoryWin32HandleKHR =
-            (PFN_vkGetMemoryWin32HandleKHR)vkGetDeviceProcAddr(device.device(), "vkGetMemoryWin32HandleKHR");
-        if (!vkGetMemoryWin32HandleKHR) {
-            throw std::runtime_error("Failed to load vkGetMemoryWin32HandleKHR");
-        }
+        //vkGetMemoryWin32HandleKHR =
+        //    (PFN_vkGetMemoryWin32HandleKHR)vkGetDeviceProcAddr(device.device(), "vkGetMemoryWin32HandleKHR");
+        //if (!vkGetMemoryWin32HandleKHR) {
+        //    throw std::runtime_error("Failed to load vkGetMemoryWin32HandleKHR");
+        //}
         checkCudaErrors(cudaStreamCreate(&streamToRun));
         c_importVkSemaphore();
 
@@ -94,7 +94,7 @@ public:
     ~CudaRenderSystem() {
         checkCudaErrors(cudaDestroyExternalSemaphore(extVulkanHandledSemaphore));
         checkCudaErrors(cudaDestroyExternalSemaphore(extCudaHandledSemaphore));
-        checkCudaErrors(cudaDestroyExternalMemory(cudaExtMemImageBuffer));
+        //checkCudaErrors(cudaDestroyExternalMemory(cudaExtMemImageBuffer)); //TODO: remember to uncomment this when we start using it
         checkCudaErrors(cudaDestroySurfaceObject(surfaceObject));
         checkCudaErrors(cudaDestroySurfaceObject(surfaceObjectTemp));
         checkCudaErrors(cudaFree(d_surfaceObject));
@@ -142,7 +142,6 @@ private:
 
     PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR;
     PFN_vkGetSemaphoreWin32HandleKHR vkGetSemaphoreWin32HandleKHR;
-    PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR;
 
 
     cudaSurfaceObject_t surfaceObject, surfaceObjectTemp;
