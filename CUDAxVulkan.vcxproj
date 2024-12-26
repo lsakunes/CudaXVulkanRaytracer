@@ -71,6 +71,7 @@
       <Include>
       </Include>
       <Defines>WIN32;WIN64;</Defines>
+      <CodeGeneration>compute_86,sm_86</CodeGeneration>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -100,10 +101,12 @@
       <Include>
       </Include>
       <Defines>WIN32;WIN64;</Defines>
+      <CodeGeneration>compute_86,sm_86</CodeGeneration>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="kernel.cu" />
+    <CudaCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cuda_render_system.cpp" />
@@ -111,7 +114,6 @@
     <ClCompile Include="vulkan.cpp" />
     <ClCompile Include="v_camera.cpp" />
     <ClCompile Include="v_device.cpp" />
-    <ClCompile Include="v_imageHandler.cpp" />
     <ClCompile Include="v_model.cpp" />
     <ClCompile Include="v_pipeline.cpp" />
     <ClCompile Include="v_renderer.cpp" />
@@ -123,10 +125,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cuda_render_system.hpp" />
+    <ClInclude Include="kernel.cuh" />
     <ClInclude Include="keyboard_movement_controller.hpp" />
     <ClInclude Include="v_camera.hpp" />
     <ClInclude Include="v_gameobject.hpp" />
-    <ClInclude Include="v_imageHandler.hpp" />
     <ClInclude Include="v_model.hpp" />
     <ClInclude Include="v_swap_chain.hpp" />
     <ClInclude Include="v_device.hpp" />

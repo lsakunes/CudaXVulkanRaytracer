@@ -61,22 +61,22 @@ void V_Pipeline::createGraphicsPipeline(
 	auto attributeDescriptions = V_Model::Vertex::getAttributeDescriptions();
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-	vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
-	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-	vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
+	vertexInputInfo.vertexBindingDescriptionCount = 0;
+	vertexInputInfo.pVertexBindingDescriptions = nullptr;
+	vertexInputInfo.vertexAttributeDescriptionCount = 0;
+	vertexInputInfo.pVertexAttributeDescriptions = nullptr;
 
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineInfo.stageCount = 2; 
 	pipelineInfo.pStages = shaderStages;
-	pipelineInfo.pVertexInputState = &vertexInputInfo;
+	pipelineInfo.pVertexInputState = &vertexInputInfo; // TODO: No?
 	pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;
 	pipelineInfo.pViewportState = &configInfo.viewportInfo;
 	pipelineInfo.pRasterizationState = &configInfo.rasterizationInfo;
 	pipelineInfo.pMultisampleState = &configInfo.multisampleInfo;
 	pipelineInfo.pColorBlendState = &configInfo.colorBlendInfo;
-	pipelineInfo.pDepthStencilState = &configInfo.depthStencilInfo;
+	// pipelineInfo.pDepthStencilState = &configInfo.depthStencilInfo; can i do this??
 	pipelineInfo.pDynamicState = &configInfo.dynamicStateInfo; //configure stuff dynamically like viewport
 
 	pipelineInfo.layout = configInfo.pipelineLayout;
@@ -138,7 +138,7 @@ void V_Pipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo) {
 	configInfo.rasterizationInfo.depthBiasEnable = VK_FALSE;
 
 	// MSAA (ANTI-ALIASING) 
-	configInfo.multisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	configInfo.multisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO; 
 	configInfo.multisampleInfo.sampleShadingEnable = VK_FALSE;
 	configInfo.multisampleInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -153,13 +153,13 @@ void V_Pipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo) {
 	configInfo.colorBlendInfo.attachmentCount = 1;
 	configInfo.colorBlendInfo.pAttachments = &configInfo.colorBlendAttachment;
 
-	//DEPTH BUFFER
-	configInfo.depthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	configInfo.depthStencilInfo.depthTestEnable = VK_TRUE;
-	configInfo.depthStencilInfo.depthWriteEnable = VK_TRUE;
-	configInfo.depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
-	configInfo.depthStencilInfo.depthBoundsTestEnable = VK_FALSE;
-	configInfo.depthStencilInfo.stencilTestEnable = VK_FALSE;
+	//DEPTH BUFFER // TODO: figure out how to turn this shit off later
+	//configInfo.depthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	//configInfo.depthStencilInfo.depthTestEnable = VK_TRUE;
+	//configInfo.depthStencilInfo.depthWriteEnable = VK_TRUE;
+	//configInfo.depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+	//configInfo.depthStencilInfo.depthBoundsTestEnable = VK_FALSE;
+	//configInfo.depthStencilInfo.stencilTestEnable = VK_FALSE;
 
 	configInfo.dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 	configInfo.dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;

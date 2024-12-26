@@ -124,7 +124,8 @@ class V_Device {
         VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
         VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME, //WE NEED EXTERNAL WIN32 EXTENSION THINGY
         "VK_KHR_external_semaphore_win32",
-        "VK_KHR_external_memory_win32"
+        "VK_KHR_external_memory_win32",
+        "VK_EXT_descriptor_indexing"
     };
 
             // My cards don't support these extensions; I'm not sure if I need them?

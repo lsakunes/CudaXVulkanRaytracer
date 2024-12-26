@@ -4,7 +4,7 @@
 
 namespace v {
 __global__ void Vulkan::run() {
-    CudaRenderSystem cudaRenderSystem{ v_device, cudaUpdateVkSemaphore, vkUpdateCudaSemaphore, &gameObjects, v_window.getExtent().height, v_window.getExtent().width};
+    CudaRenderSystem cudaRenderSystem{ v_device, V_SwapChain::MAX_FRAMES_IN_FLIGHT, cudaUpdateVkSemaphore, vkUpdateCudaSemaphore, &gameObjects, v_window.getExtent().height, v_window.getExtent().width, v_renderer.getSwapChainRenderPass()};
 
     
     V_Camera camera{};
@@ -20,7 +20,6 @@ __global__ void Vulkan::run() {
 
         // give cuda the buffers here?
         // and get a handle for a semaphore
-        cudaRenderSystem.c_trace();
 
         std::chrono::steady_clock::time_point newTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
@@ -34,8 +33,9 @@ __global__ void Vulkan::run() {
         camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 10.f);
         if (auto commandBuffer = v_renderer.beginFrame()) {
 
-            v_renderer.beginSwapChainRenderPass(commandBuffer); 
-
+            cudaRenderSystem.c_createPipelineBarrier(commandBuffer);
+            v_renderer.beginSwapChainRenderPass(commandBuffer);
+            cudaRenderSystem.c_trace(v_renderer.getCurrentCommandBuffer());
             v_renderer.endSwapChainRenderPass(commandBuffer);
             v_renderer.endFrame();
         }

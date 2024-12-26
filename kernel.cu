@@ -1,121 +1,91 @@
-﻿
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "kernel.cuh"
+#include <iostream>
+#include <device_launch_parameters.h>
 
-#include <stdio.h>
-#include "vulkan.hpp"
+union RGBA32 {
+	uint32_t d;
+	uchar4 v;
+	struct {
+		uint8_t r, g, b, a;
+	} c;
+};
 
-cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
+__device__ int rgbaFloatToInt(float4 rgba) {
+	int r = static_cast<int>(rgba.x * 255.0f);
+	int g = static_cast<int>(rgba.y * 255.0f);
+	int b = static_cast<int>(rgba.z * 255.0f);
+	int a = static_cast<int>(rgba.w * 255.0f);
 
-__global__ void addKernel(int *c, const int *a, const int *b)
-{
-    int i = threadIdx.x;
-    c[i] = a[i] + b[i];
+	//return (r << 24) | (g << 16) | (b << 8) | a;
+	return (a << 24) | (b << 16) | (g << 8) | r; //TODO: investigate
 }
 
-//void importMemory() {
-//    CUDA_EXTERNAL_MEMORY_HANDLE_DESC memDesc = { };
-//    memDesc.type = CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD;
-//    memDesc.handle.fd = getVulkanMemoryHandle(device, memory);
-//    memDesc.size = extent.width * extent.height * 4;
+
+template<class Rgb>
+__global__ void copySurfaceToBuffer(cudaSurfaceObject_t surface, unsigned char* buffer, int width, int height) {
+	int x = blockIdx.x * blockDim.x + threadIdx.x;
+	int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+	if (x < width && y < height) {
+		Rgb pixel;
+		surf2Dread(&pixel.d, surface, x * sizeof(Rgb), y);
+
+		int idx = (y * width + x) * 4;
+		buffer[idx + 0] = pixel.c.r;  
+		buffer[idx + 1] = pixel.c.g;  
+		buffer[idx + 2] = pixel.c.b;  
+		buffer[idx + 3] = pixel.c.a;  
+	}
+}
+
+
+template<class Rgb>
+// Define the kernel function
+__global__ void plainUV(cudaSurfaceObject_t surface, int nWidth, int nHeight) {
+	int x = (threadIdx.x + blockIdx.x * blockDim.x);
+	int y = (threadIdx.y + blockIdx.y * blockDim.y);
+	if (x + 1 >= nWidth || y + 1 >= nHeight) {
+		return;
+	}
+	float4 rgba{};
+	rgba.x = (x & 0xFF) / 255.0f;
+	rgba.y = (y & 0xFF) / 255.0f;
+	rgba.z = 0.0f;
+	rgba.w = 1.0f;
+	int color = rgbaFloatToInt(rgba);
+	surf2Dwrite(color, surface, x * sizeof(Rgb), y);
+
+}
+
+// Define the host function to launch the kernel
+void launchPlainUV(uint32_t height, uint32_t width, cudaStream_t stream, cudaSurfaceObject_t surface) {
+    // Launch the kernel with 1 block and 1 thread
+	uint32_t idealSquareSize = 50; // ???
+	int tx = ceil(width / idealSquareSize);
+	int ty = ceil(height / idealSquareSize);
+
+	dim3 blocks(width / tx + 1, height / ty + 1);
+	dim3 threads(tx, ty);
+
+	plainUV<RGBA32> << <blocks, threads, 0, stream >> > (surface, width, height);
+
+	cudaDeviceSynchronize();
+
+//	unsigned char* h_buffer = new unsigned char[width * height * 4]; // For RGBA
+//	unsigned char* d_buffer;
+//	cudaMalloc(&d_buffer, width * height * 4);
+//	copySurfaceToBuffer<RGBA32> <<<blocks, threads, 0, stream>>>(surface, d_buffer, width, height);
+//	cudaMemcpy(h_buffer, d_buffer, width * height * 4, cudaMemcpyDeviceToHost);
 //
-//    CUDA_DRVAPI_CALL(cuImportExternalMemory(&externalMem, &memDesc));
-//}
-
-int main()
-{
-    v::Vulkan app{};
-    app.run(); 
-
-    // cudaDeviceReset must be called before exiting in order for profiling and
-    // tracing tools such as Nsight and Visual Profiler to show complete traces.
-    cudaError_t cudaStatus = cudaDeviceReset();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceReset failed!");
-        return 1;
-    }
-
-    return 0;
+//	// Print contents to console
+//	for (int y = 0; y < height; y+=10) {
+//		for (int x = 0; x < width; x+=10) {
+//			int idx = (y * width + x) * 4;
+//			printf("Pixel(%d, %d): R=%d G=%d B=%d A=%d\n", x, y, h_buffer[idx], h_buffer[idx + 1], h_buffer[idx + 2], h_buffer[idx + 3]);
+//		}
+//	}
+//
+//	cudaDeviceSynchronize();
+//	cudaFree(d_buffer);
+//	delete[] h_buffer;
 }
-
-// Helper function for using CUDA to add vectors in parallel.
-cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
-{
-    int *dev_a = 0;
-    int *dev_b = 0;
-    int *dev_c = 0;
-    cudaError_t cudaStatus;
-
-    // Choose which GPU to run on, change this on a multi-GPU system.
-    cudaStatus = cudaSetDevice(0);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
-        goto Error;
-    }
-
-    // Allocate GPU buffers for three vectors (two input, one output)    .
-    cudaStatus = cudaMalloc((void**)&dev_c, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
-
-    cudaStatus = cudaMalloc((void**)&dev_a, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
-
-    cudaStatus = cudaMalloc((void**)&dev_b, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
-
-    // Copy input vectors from host memory to GPU buffers.
-    cudaStatus = cudaMemcpy(dev_a, a, size * sizeof(int), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-    cudaStatus = cudaMemcpy(dev_b, b, size * sizeof(int), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-    // Launch a kernel on the GPU with one thread for each element.
-    addKernel<<<1, size>>>(dev_c, dev_a, dev_b);
-
-    // Check for any errors launching the kernel
-    cudaStatus = cudaGetLastError();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
-        goto Error;
-    }
-    
-    // cudaDeviceSynchronize waits for the kernel to finish, and returns
-    // any errors encountered during the launch.
-    cudaStatus = cudaDeviceSynchronize();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
-        goto Error;
-    }
-
-    // Copy output vector from GPU buffer to host memory.
-    cudaStatus = cudaMemcpy(c, dev_c, size * sizeof(int), cudaMemcpyDeviceToHost);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-Error:
-    cudaFree(dev_c);
-    cudaFree(dev_a);
-    cudaFree(dev_b);
-    
-    return cudaStatus;
-}
-
-

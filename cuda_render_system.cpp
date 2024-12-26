@@ -1,18 +1,11 @@
 #include "cuda_render_system.hpp"
 
-
-#include <aclapi.h>
-#include <dxgi1_2.h>
-#include <windows.h>
-#include <VersionHelpers.h>
-#include <surface_functions.h>
-
-#include <vulkan/vulkan_win32.h>
 #include "windowsSecurity.hpp"
 #include <cstring>
+#include <cassert>
+#include "kernel.cuh"
 
 #include "v_utils.hpp"
-
 
 //namespace std {
 //	template<>
@@ -26,17 +19,6 @@
 //}
 
 namespace v {
-
-template<class Rgb>
-__device__ void plainUV(cudaSurfaceObject_t surface, int nWidth, int nHeight){
-	int x = (threadIdx.x + blockIdx.x * blockDim.x);
-	int y = (threadIdx.y + blockIdx.y * blockDim.y);
-	if (x + 1 >= nWidth || y + 1 >= nHeight) {
-		return;
-	}
-	float value = static_cast<float>(x + y); // Example value
-	surf2Dwrite(value, surface, x * sizeof(float), y);
-}
 
 HANDLE CudaRenderSystem::getVkSemaphoreHandle(
 	VkExternalSemaphoreHandleTypeFlagBitsKHR externalSemaphoreHandleType,
@@ -216,11 +198,11 @@ void CudaRenderSystem::c_importImage() {
 	cudaResourceDesc resourceDesc;
 
 	checkCudaErrors(cudaGetMipmappedArrayLevel(
-		&cudaMipLevelArray, cudaMipmappedImageArray, 1));
+		&cudaMipLevelArray, cudaMipmappedImageArray, 0));
 	checkCudaErrors(cudaGetMipmappedArrayLevel(
-		&cudaMipLevelArrayTemp, cudaMipmappedImageArrayTemp, 1));
+		&cudaMipLevelArrayTemp, cudaMipmappedImageArrayTemp, 0));
 	checkCudaErrors(cudaGetMipmappedArrayLevel(
-		&cudaMipLevelArrayOrig, cudaMipmappedImageArrayOrig, 1));
+		&cudaMipLevelArrayOrig, cudaMipmappedImageArrayOrig, 0));
 	checkCudaErrors(cudaMemcpy2DArrayToArray(
 		cudaMipLevelArrayOrig, 0, 0, cudaMipLevelArray, 0, 0,
 		(width >> 1) * sizeof(uchar4), (height >> 1), cudaMemcpyDeviceToDevice));
@@ -276,6 +258,39 @@ void CudaRenderSystem::c_importImage() {
 	printf("CUDA Kernel Vulkan image buffer\n");
 }
 
+void CudaRenderSystem::c_createSampler() {
+	VkSamplerCreateInfo samplerCreateInfo{};
+	samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+	samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+	samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+	samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	if (vkCreateSampler(v_device.device(), &samplerCreateInfo, nullptr, &sampler) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create sampler!");
+	}
+}
+
+void CudaRenderSystem::c_createImageView() {
+	VkImageViewCreateInfo imageViewCreateInfo{};
+	imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	imageViewCreateInfo.image = image;
+	imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	imageViewCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+	imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+	imageViewCreateInfo.subresourceRange.levelCount = 1;
+	imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+	imageViewCreateInfo.subresourceRange.layerCount = 1;
+
+	if (vkCreateImageView(v_device.device(), &imageViewCreateInfo, nullptr, &imageView) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create image view!");
+	}
+}
+
 void CudaRenderSystem::c_importMemory(HANDLE memoryHandle, size_t extMemSize, VkDeviceMemory extMemory, void** bufferPtr, cudaExternalMemory_t &extBuffer) {
 	cudaExternalMemoryHandleDesc cudaExtMemHandleDesc;
 	memset(&cudaExtMemHandleDesc, 0, sizeof(cudaExtMemHandleDesc));
@@ -294,20 +309,15 @@ void CudaRenderSystem::c_importMemory(HANDLE memoryHandle, size_t extMemSize, Vk
 	checkCudaErrors(cudaExternalMemoryGetMappedBuffer(bufferPtr, extBuffer, &bufferDesc));
 }
 
-void CudaRenderSystem::c_trace() {
+void CudaRenderSystem::c_trace(VkCommandBuffer commandBuffer) {
 	if (firstFrame) firstFrame = false;
-	else c_waitVkSemaphore();
-
-	vkQueueWaitIdle(v_device.graphicsQueue());
-	/*void* indexBufferPtr;
-	c_importMemory(getVkMemoryHandle(model->getIndexBufferMemory()), model->getIndexBufferSize(), &indexBufferPtr);*/
+		else c_waitVkSemaphore();
+	launchPlainUV(height, width, streamToRun, surfaceObj);
 	c_signalVkSemaphore();
-
-	// get buffers
-	// for now just std::cout them
-	//
-	// signalVkSemaphore();
-	// cudaFree(indexBufferPtr);
+	c_updateDescriptorSet();
+	v_pipeline->bindGraphics(commandBuffer);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+	vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 }
 
 void CudaRenderSystem::c_signalVkSemaphore() {
@@ -347,6 +357,135 @@ void CudaRenderSystem::c_importVkSemaphore() {
 	printf("CUDA Imported Vulkan semaphore\n");
 }
 
+void CudaRenderSystem::c_createPipelineBarrier(VkCommandBuffer commandBuffer) {
+	VkImageMemoryBarrier barrier{};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	barrier.srcAccessMask =  VK_ACCESS_TRANSFER_WRITE_BIT;
+	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	barrier.image = image;
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+
+	vkCmdPipelineBarrier(
+		commandBuffer,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+		0,
+		0, nullptr,
+		0, nullptr,
+		1, &barrier
+	);
+}
+
+void CudaRenderSystem::c_createPipelineLayout() {
+
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount = 1;
+	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+	pipelineLayoutInfo.pushConstantRangeCount = 0;
+	if (vkCreatePipelineLayout(v_device.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
+		VK_SUCCESS) {
+		throw std::runtime_error("error at createPipelineLayoutInfo");
+	}
+}
+
+void CudaRenderSystem::c_createPipeline(VkRenderPass renderPass) {
+	assert(pipelineLayout != nullptr && "Cannot create pipeline before pipline layout");
+
+	PipelineConfigInfo pipelineConfig = PipelineConfigInfo{};
+	V_Pipeline::defaultPipelineConfigInfo(pipelineConfig);
+
+	pipelineConfig.renderPass = renderPass;
+	pipelineConfig.pipelineLayout = pipelineLayout;
+
+	v_pipeline = std::make_unique<V_Pipeline>(
+		v_device,
+		"C:/Users/senuk/source/repos/Raytracing/CUDA_Vulkan_Interop/CudaVulkanInterop/shaders/vert.spv",
+		"C:/Users/senuk/source/repos/Raytracing/CUDA_Vulkan_Interop/CudaVulkanInterop/shaders/frag.spv",
+		pipelineConfig);
+}
+
+void CudaRenderSystem::c_createDescriptorSet() {
+	VkDescriptorSetAllocateInfo allocateInfo{};
+	allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocateInfo.descriptorPool = descriptorPool;
+	allocateInfo.descriptorSetCount = 1;
+	allocateInfo.pSetLayouts = &descriptorSetLayout; 
+
+	if (vkAllocateDescriptorSets(v_device.device(), &allocateInfo, &descriptorSet) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to allocate descriptor set!");
+	}
+
+}
+
+void CudaRenderSystem::c_updateDescriptorSet() {
+
+	VkDescriptorImageInfo imageInfo{};
+	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	imageInfo.imageView = imageView;
+	imageInfo.sampler = sampler;
+
+	VkWriteDescriptorSet writeDescriptorSet{};
+	writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeDescriptorSet.dstSet = descriptorSet;
+	writeDescriptorSet.dstBinding = 0;
+	writeDescriptorSet.dstArrayElement = 0;
+	writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	writeDescriptorSet.descriptorCount = 1;
+	writeDescriptorSet.pImageInfo = &imageInfo;
+
+	vkUpdateDescriptorSets(v_device.device(), 1, &writeDescriptorSet, 0, nullptr);
+}
+
+void CudaRenderSystem::c_createDescriptorPool(uint32_t numSwapChainImages) {
+	VkDescriptorPoolSize poolSize{};
+	poolSize.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+	poolSize.descriptorCount = numSwapChainImages;
+
+	VkDescriptorPoolCreateInfo poolCreateInfo{};
+	poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolCreateInfo.poolSizeCount = 1;
+	poolCreateInfo.pPoolSizes = &poolSize;
+	poolCreateInfo.maxSets = 1;
+	poolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+	if (vkCreateDescriptorPool(v_device.device(), &poolCreateInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create descriptor pool!");
+	}
+}
+
+void CudaRenderSystem::c_createDescriptorSetLayout() {
+	VkDescriptorSetLayoutBindingFlagsCreateInfoEXT bindingFlagsInfo{};
+	bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT;
+	bindingFlagsInfo.bindingCount = 1;
+	VkDescriptorBindingFlagsEXT bindingFlags = VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
+	bindingFlagsInfo.pBindingFlags = &bindingFlags;
+
+	VkDescriptorSetLayoutBinding imageBinding{};
+	imageBinding.binding = 0;
+	imageBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	imageBinding.descriptorCount = 1;
+	imageBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT; 
+	imageBinding.pImmutableSamplers = nullptr;
+
+	// Descriptor set layout creation
+	VkDescriptorSetLayoutCreateInfo layoutCreateInfo{};
+	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutCreateInfo.bindingCount = 1;
+	layoutCreateInfo.pBindings = &imageBinding;
+	layoutCreateInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+	layoutCreateInfo.pNext = &bindingFlagsInfo;
+
+	if (vkCreateDescriptorSetLayout(v_device.device(), &layoutCreateInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create descriptor set layout!");
+	}
+
+}
 
 std::vector<VkVertexInputBindingDescription> CudaRenderSystem::C_Vertex::getBindingDescriptions() {
 	std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
@@ -356,8 +495,6 @@ std::vector<VkVertexInputBindingDescription> CudaRenderSystem::C_Vertex::getBind
 	bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 	return bindingDescriptions;
 }
-
-
 std::vector<VkVertexInputAttributeDescription> CudaRenderSystem::C_Vertex::getAttributeDescriptions() {
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 
