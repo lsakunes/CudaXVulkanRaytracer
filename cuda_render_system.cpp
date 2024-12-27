@@ -309,14 +309,14 @@ void CudaRenderSystem::c_importMemory(HANDLE memoryHandle, size_t extMemSize, Vk
 	checkCudaErrors(cudaExternalMemoryGetMappedBuffer(bufferPtr, extBuffer, &bufferDesc));
 }
 
-void CudaRenderSystem::c_trace(VkCommandBuffer commandBuffer) {
+void CudaRenderSystem::c_trace(VkCommandBuffer commandBuffer, int frameIndex) {
 	if (firstFrame) firstFrame = false;
-		else c_waitVkSemaphore();
+	else c_waitVkSemaphore();
 	launchPlainUV(height, width, streamToRun, surfaceObj);
-	c_signalVkSemaphore();
-	c_updateDescriptorSet();
+	c_signalVkSemaphore(); // TODO: later signal semaphore async? 
+	c_updateDescriptorSets();
 	v_pipeline->bindGraphics(commandBuffer);
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[frameIndex], 0, nullptr);
 	vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 }
 
@@ -411,39 +411,44 @@ void CudaRenderSystem::c_createPipeline(VkRenderPass renderPass) {
 		pipelineConfig);
 }
 
-void CudaRenderSystem::c_createDescriptorSet() {
-	VkDescriptorSetAllocateInfo allocateInfo{};
-	allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocateInfo.descriptorPool = descriptorPool;
-	allocateInfo.descriptorSetCount = 1;
-	allocateInfo.pSetLayouts = &descriptorSetLayout; 
+void CudaRenderSystem::c_createDescriptorSets() {
+	std::vector<VkDescriptorSetLayout> layouts(numSwapChainImages,
+		descriptorSetLayout);
+	VkDescriptorSetAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.descriptorSetCount = numSwapChainImages;
+	allocInfo.pSetLayouts = layouts.data();
 
-	if (vkAllocateDescriptorSets(v_device.device(), &allocateInfo, &descriptorSet) != VK_SUCCESS) {
+	descriptorSets.resize(numSwapChainImages);
+
+	if (vkAllocateDescriptorSets(v_device.device(), &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to allocate descriptor set!");
 	}
 
 }
 
-void CudaRenderSystem::c_updateDescriptorSet() {
+void CudaRenderSystem::c_updateDescriptorSets() {
+	for (size_t i = 0; i < numSwapChainImages; i++) {
+		VkDescriptorImageInfo imageInfo{};
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo.imageView = imageView;
+		imageInfo.sampler = sampler;
 
-	VkDescriptorImageInfo imageInfo{};
-	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	imageInfo.imageView = imageView;
-	imageInfo.sampler = sampler;
+		VkWriteDescriptorSet writeDescriptorSet{};
+		writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptorSet.dstSet = descriptorSets[i];
+		writeDescriptorSet.dstBinding = 0;
+		writeDescriptorSet.dstArrayElement = 0;
+		writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writeDescriptorSet.descriptorCount = 1;
+		writeDescriptorSet.pImageInfo = &imageInfo;
 
-	VkWriteDescriptorSet writeDescriptorSet{};
-	writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	writeDescriptorSet.dstSet = descriptorSet;
-	writeDescriptorSet.dstBinding = 0;
-	writeDescriptorSet.dstArrayElement = 0;
-	writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	writeDescriptorSet.descriptorCount = 1;
-	writeDescriptorSet.pImageInfo = &imageInfo;
-
-	vkUpdateDescriptorSets(v_device.device(), 1, &writeDescriptorSet, 0, nullptr);
+		vkUpdateDescriptorSets(v_device.device(), 1, &writeDescriptorSet, 0, nullptr);
+	}
 }
 
-void CudaRenderSystem::c_createDescriptorPool(uint32_t numSwapChainImages) {
+void CudaRenderSystem::c_createDescriptorPool() {
 	VkDescriptorPoolSize poolSize{};
 	poolSize.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 	poolSize.descriptorCount = numSwapChainImages;
@@ -452,7 +457,7 @@ void CudaRenderSystem::c_createDescriptorPool(uint32_t numSwapChainImages) {
 	poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	poolCreateInfo.poolSizeCount = 1;
 	poolCreateInfo.pPoolSizes = &poolSize;
-	poolCreateInfo.maxSets = 1;
+	poolCreateInfo.maxSets = numSwapChainImages;
 	poolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
 	if (vkCreateDescriptorPool(v_device.device(), &poolCreateInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create descriptor pool!");

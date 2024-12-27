@@ -153,7 +153,7 @@ void V_Pipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo) {
 	configInfo.colorBlendInfo.attachmentCount = 1;
 	configInfo.colorBlendInfo.pAttachments = &configInfo.colorBlendAttachment;
 
-	//DEPTH BUFFER // TODO: figure out how to turn this shit off later
+	//DEPTH BUFFER 
 	//configInfo.depthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	//configInfo.depthStencilInfo.depthTestEnable = VK_TRUE;
 	//configInfo.depthStencilInfo.depthWriteEnable = VK_TRUE;

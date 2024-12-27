@@ -38,9 +38,7 @@ __global__ void copySurfaceToBuffer(cudaSurfaceObject_t surface, unsigned char* 
 	}
 }
 
-
 template<class Rgb>
-// Define the kernel function
 __global__ void plainUV(cudaSurfaceObject_t surface, int nWidth, int nHeight) {
 	int x = (threadIdx.x + blockIdx.x * blockDim.x);
 	int y = (threadIdx.y + blockIdx.y * blockDim.y);
@@ -57,9 +55,7 @@ __global__ void plainUV(cudaSurfaceObject_t surface, int nWidth, int nHeight) {
 
 }
 
-// Define the host function to launch the kernel
 void launchPlainUV(uint32_t height, uint32_t width, cudaStream_t stream, cudaSurfaceObject_t surface) {
-    // Launch the kernel with 1 block and 1 thread
 	uint32_t idealSquareSize = 50; // ???
 	int tx = ceil(width / idealSquareSize);
 	int ty = ceil(height / idealSquareSize);
@@ -69,7 +65,7 @@ void launchPlainUV(uint32_t height, uint32_t width, cudaStream_t stream, cudaSur
 
 	plainUV<RGBA32> << <blocks, threads, 0, stream >> > (surface, width, height);
 
-	cudaDeviceSynchronize();
+	//cudaDeviceSynchronize();
 
 //	unsigned char* h_buffer = new unsigned char[width * height * 4]; // For RGBA
 //	unsigned char* d_buffer;

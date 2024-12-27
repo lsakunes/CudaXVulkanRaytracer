@@ -43,10 +43,10 @@ public:
     }
 
     CudaRenderSystem(
-        V_Device& device, uint32_t numSwapChainImages, VkSemaphore cudaToVkSemaphore, VkSemaphore vkToCudaSemaphore,
+        V_Device& device, uint32_t nSwapChainImages, VkSemaphore cudaToVkSemaphore, VkSemaphore vkToCudaSemaphore,
         std::vector<V_GameObject>* objects, uint32_t h, uint32_t w, VkRenderPass renderPass) : height(h), width(w),
         v_device(device), cudaUpdateVkSemaphore(cudaToVkSemaphore),
-        vkUpdateCudaSemaphore(vkToCudaSemaphore), gameObjects(objects) {
+        vkUpdateCudaSemaphore(vkToCudaSemaphore), gameObjects(objects), numSwapChainImages(nSwapChainImages) {
 
         c_createFunctions();
         c_createModel();
@@ -55,9 +55,9 @@ public:
         c_importVkSemaphore();
         c_createSurfaceAndColorArray();
         c_createDescriptorSetLayout();
-        c_createDescriptorPool(numSwapChainImages);
+        c_createDescriptorPool();
         std::cout << descriptorPool << "\n";
-        c_createDescriptorSet();
+        c_createDescriptorSets();
         c_createPipelineLayout();
         c_createPipeline(renderPass);
         c_createImage();
@@ -89,7 +89,6 @@ public:
         vkDestroyImageView(v_device.device(), imageView, nullptr);
         vkDestroyImage(v_device.device(), image, nullptr);
         vkFreeMemory(v_device.device(), imageMemory, nullptr);
-
     }
 
     CudaRenderSystem(const CudaRenderSystem&) = delete;
@@ -97,7 +96,7 @@ public:
 
     void c_createPipelineBarrier(VkCommandBuffer commandBuffer);
 
-    void c_trace(VkCommandBuffer commandBuffer);
+    void c_trace(VkCommandBuffer commandBuffer, int frameIndex);
 
 private:
     void c_signalVkSemaphore();
@@ -147,9 +146,9 @@ private:
     void c_createPipelineLayout();
     void c_createPipeline(VkRenderPass renderPass);
     void c_createDescriptorSetLayout();
-    void c_createDescriptorSet();
-    void c_createDescriptorPool(uint32_t numSwapChainImages);
-    void c_updateDescriptorSet();
+    void c_createDescriptorSets();
+    void c_createDescriptorPool();
+    void c_updateDescriptorSets();
     void c_createSampler();
     void c_createImageView();
     HANDLE getVkImageMemHandle(
@@ -162,6 +161,7 @@ private:
     cudaExternalSemaphore_t extVulkanHandledSemaphore;
     VkSemaphore cudaUpdateVkSemaphore, vkUpdateCudaSemaphore;
     std::vector<V_GameObject>* gameObjects;
+    uint32_t numSwapChainImages;
 
     PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR;
     PFN_vkGetSemaphoreWin32HandleKHR vkGetSemaphoreWin32HandleKHR;
@@ -188,7 +188,7 @@ private:
     VkPipelineLayout pipelineLayout;
     std::unique_ptr<V_Pipeline> v_pipeline;
 
-    VkDescriptorSet descriptorSet;
+    std::vector<VkDescriptorSet> descriptorSets;
     VkDescriptorSetLayout descriptorSetLayout;
     VkDescriptorPool descriptorPool;
 

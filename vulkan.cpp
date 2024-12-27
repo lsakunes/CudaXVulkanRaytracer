@@ -32,10 +32,10 @@ __global__ void Vulkan::run() {
         //camera.setOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
         camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 10.f);
         if (auto commandBuffer = v_renderer.beginFrame()) {
-
             cudaRenderSystem.c_createPipelineBarrier(commandBuffer);
             v_renderer.beginSwapChainRenderPass(commandBuffer);
-            cudaRenderSystem.c_trace(v_renderer.getCurrentCommandBuffer());
+            cudaRenderSystem.c_trace(v_renderer.getCurrentCommandBuffer(),
+                v_renderer.getFrameIndex());
             v_renderer.endSwapChainRenderPass(commandBuffer);
             v_renderer.endFrame();
         }

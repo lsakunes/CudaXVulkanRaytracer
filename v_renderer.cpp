@@ -119,7 +119,7 @@ void V_Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) {
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
 
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); // TODO: contents inline might change to use secondary command buffers with cuda?? maybe??
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE); 
 
     VkViewport viewport{};
     viewport.x = 0.0f;
