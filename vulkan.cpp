@@ -89,7 +89,7 @@ Vulkan::Vulkan() {
 Vulkan::~Vulkan() {}
 
 void Vulkan::loadGameObjects() {
-    std::shared_ptr<V_Model> v_model = V_Model::createModelFromFile(v_device, "C:/Users/senuk/source/repos/Raytracing/CUDA_Vulkan_Interop/CudaVulkanInterop/models/suzanne.obj");
+    std::shared_ptr<V_Model> v_model = V_Model::createModelFromFile(v_device, "C:/Users/senuk/source/repos/Raytracing/CUDA_Vulkan_Interop/CudaVulkanRaytracer/models/suzanne.obj");
 
     V_GameObject gameObj = V_GameObject::createGameObject();
     gameObj.model = v_model;

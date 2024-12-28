@@ -107,6 +107,7 @@
   <ItemGroup>
     <CudaCompile Include="kernel.cu" />
     <CudaCompile Include="main.cpp" />
+    <CudaCompile Include="cudaMain.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cuda_render_system.cpp" />
@@ -124,9 +125,25 @@
     <ClCompile Include="windowsSecurity.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="aabb.hpp" />
+    <ClInclude Include="bvh.hpp" />
+    <ClInclude Include="camera.hpp" />
+    <ClInclude Include="color.hpp" />
     <ClInclude Include="cuda_render_system.hpp" />
+    <ClInclude Include="denoiser.hpp" />
+    <ClInclude Include="hitable.hpp" />
+    <ClInclude Include="hitable_list.hpp" />
     <ClInclude Include="kernel.cuh" />
     <ClInclude Include="keyboard_movement_controller.hpp" />
+    <ClInclude Include="linmath.hpp" />
+    <ClInclude Include="perlin.hpp" />
+    <ClInclude Include="ray.hpp" />
+    <ClInclude Include="sphere.hpp" />
+    <ClInclude Include="stats.hpp" />
+    <ClInclude Include="stb_image.h" />
+    <ClInclude Include="texture.hpp" />
+    <ClInclude Include="triangle.hpp" />
+    <ClInclude Include="vec3.hpp" />
     <ClInclude Include="v_camera.hpp" />
     <ClInclude Include="v_gameobject.hpp" />
     <ClInclude Include="v_model.hpp" />
@@ -138,8 +155,10 @@
     <ClInclude Include="windowsSecurity.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\shader.frag" />
-    <None Include="shaders\shader.vert" />
+    <Image Include="earthmap.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="path tracing.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

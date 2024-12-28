@@ -1,6 +1,19 @@
 #include "kernel.cuh"
 #include <iostream>
 #include <device_launch_parameters.h>
+//#include "camera.hpp"
+
+void check_cuda(cudaError_t result, char const* const func, const char* const file, int const line) {
+	{
+		if (result != cudaSuccess) {
+			std::cerr << "CUDA error = " << cudaGetErrorString(result) << " at " << file << ":" << line << " '" << func << " " << "' \n";
+			cudaDeviceReset();
+			exit(EXIT_FAILURE);
+		}
+	}
+
+}
+
 
 union RGBA32 {
 	uint32_t d;
@@ -62,6 +75,10 @@ void launchPlainUV(uint32_t height, uint32_t width, cudaStream_t stream, cudaSur
 
 	dim3 blocks(width / tx + 1, height / ty + 1);
 	dim3 threads(tx, ty);
+
+
+	//camera** d_cam;
+	//checkCudaErrors(cudaMalloc((void**)&d_cam, sizeof(camera*)));
 
 	plainUV<RGBA32> << <blocks, threads, 0, stream >> > (surface, width, height);
 

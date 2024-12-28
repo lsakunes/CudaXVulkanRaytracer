@@ -14,6 +14,7 @@ using namespace v;
 
 int main()
 {
+    cudaDeviceSetLimit(cudaLimitStackSize, 8192);
     v::Vulkan app{};
     app.run(); 
 

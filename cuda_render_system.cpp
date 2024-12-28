@@ -408,8 +408,8 @@ void CudaRenderSystem::c_createPipeline(VkRenderPass renderPass) {
 
 	v_pipeline = std::make_unique<V_Pipeline>(
 		v_device,
-		"C:/Users/senuk/source/repos/Raytracing/CUDA_Vulkan_Interop/CudaVulkanInterop/shaders/vert.spv",
-		"C:/Users/senuk/source/repos/Raytracing/CUDA_Vulkan_Interop/CudaVulkanInterop/shaders/frag.spv",
+		"C:/Users/senuk/source/repos/Raytracing/CUDA_Vulkan_Interop/CudaVulkanRaytracer/shaders/vert.spv",
+		"C:/Users/senuk/source/repos/Raytracing/CUDA_Vulkan_Interop/CudaVulkanRaytracer/shaders/frag.spv",
 		pipelineConfig);
 }
 

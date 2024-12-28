@@ -10,11 +10,9 @@
 #include "device_launch_parameters.h"
 #include <iostream>
 #include <vector>
-#include <iostream>
+#include "kernel.cuh"
 
 #include <vulkan/vulkan_win32.h>
-
-#define checkCudaErrors(val) check_cuda((val), #val, __FILE__, __LINE__)
 
 namespace v {
 
@@ -33,14 +31,6 @@ public:
             return position == other.position && color == other.color && normal == other.normal && uv == other.uv;
         }
     };
-
-    void check_cuda(cudaError_t result, char const* const func, const char* const file, int const line) {
-        if (result != cudaSuccess) {
-            std::cerr << "CUDA error = " << cudaGetErrorString(result) << " at " << file << ":" << line << " '" << func << " " << "' \n";
-            cudaDeviceReset();
-            exit(EXIT_FAILURE);
-        }
-    }
 
     CudaRenderSystem(
         V_Device& device, uint32_t nSwapChainImages, VkSemaphore cudaToVkSemaphore, VkSemaphore vkToCudaSemaphore,

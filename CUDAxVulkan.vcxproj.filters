@@ -1,12 +1,22 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <CudaCompile Include="main.cpp" />
-    <CudaCompile Include="kernel.cu" />
+    <CudaCompile Include="main.cpp">
+      <Filter>Vulkan</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernel.cu">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
+    <CudaCompile Include="cudaMain.cu">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Vulkan">
       <UniqueIdentifier>{53bb7493-1df3-442a-aace-610c83010808}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CUDA">
+      <UniqueIdentifier>{35877004-d337-4808-8c63-806b97279abb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -40,11 +50,15 @@
     <ClCompile Include="v_camera.cpp">
       <Filter>Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="keyboard_movement_controller.cpp" />
     <ClCompile Include="cuda_render_system.cpp">
       <Filter>Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="windowsSecurity.cpp" />
+    <ClCompile Include="keyboard_movement_controller.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="windowsSecurity.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="v_window.hpp">
@@ -68,16 +82,76 @@
     <ClInclude Include="v_camera.hpp">
       <Filter>Vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="keyboard_movement_controller.hpp" />
-    <ClInclude Include="v_utils.hpp" />
     <ClInclude Include="cuda_render_system.hpp">
       <Filter>Vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="windowsSecurity.hpp" />
-    <ClInclude Include="kernel.cuh" />
+    <ClInclude Include="keyboard_movement_controller.hpp">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="aabb.hpp">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="bvh.hpp">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="camera.hpp">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="color.hpp">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="denoiser.hpp">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="hitable.hpp">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="hitable_list.hpp">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="kernel.cuh">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="linmath.hpp">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="ray.hpp">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="perlin.hpp">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="sphere.hpp">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="stats.hpp">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="texture.hpp">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="triangle.hpp">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="v_utils.hpp">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="vec3.hpp">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="windowsSecurity.hpp">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\shader.frag" />
-    <None Include="shaders\shader.vert" />
+    <Text Include="path tracing.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="earthmap.jpg">
+      <Filter>CUDA</Filter>
+    </Image>
   </ItemGroup>
 </Project>
