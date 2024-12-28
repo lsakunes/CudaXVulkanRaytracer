@@ -22,7 +22,7 @@ __device__ int rgbaFloatToInt(float4 rgba) {
 
 
 template<class Rgb>
-__global__ void copySurfaceToBuffer(cudaSurfaceObject_t surface, unsigned char* buffer, int width, int height) {
+__global__ void copySurfaceToBuffer(cudaSurfaceObject_t* surface, unsigned char* buffer, int width, int height) {
 	int x = blockIdx.x * blockDim.x + threadIdx.x;
 	int y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -39,7 +39,7 @@ __global__ void copySurfaceToBuffer(cudaSurfaceObject_t surface, unsigned char* 
 }
 
 template<class Rgb>
-__global__ void plainUV(cudaSurfaceObject_t surface, int nWidth, int nHeight) {
+__global__ void plainUV(cudaSurfaceObject_t* surface, int nWidth, int nHeight) {
 	int x = (threadIdx.x + blockIdx.x * blockDim.x);
 	int y = (threadIdx.y + blockIdx.y * blockDim.y);
 	if (x + 1 >= nWidth || y + 1 >= nHeight) {
@@ -51,11 +51,11 @@ __global__ void plainUV(cudaSurfaceObject_t surface, int nWidth, int nHeight) {
 	rgba.z = 0.0f;
 	rgba.w = 1.0f;
 	int color = rgbaFloatToInt(rgba);
-	surf2Dwrite(color, surface, x * sizeof(Rgb), y);
+	surf2Dwrite(color, surface[0], x * sizeof(Rgb), y);
 
 }
 
-void launchPlainUV(uint32_t height, uint32_t width, cudaStream_t stream, cudaSurfaceObject_t surface) {
+void launchPlainUV(uint32_t height, uint32_t width, cudaStream_t stream, cudaSurfaceObject_t* surface) {
 	uint32_t idealSquareSize = 50; // ???
 	int tx = ceil(width / idealSquareSize);
 	int ty = ceil(height / idealSquareSize);

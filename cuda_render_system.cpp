@@ -193,9 +193,10 @@ void CudaRenderSystem::c_importImage() {
 		&formatDesc, extent, 1));
 	checkCudaErrors(cudaMallocMipmappedArray(&cudaMipmappedImageArrayOrig,
 		&formatDesc, extent, 1));
+
+
 	cudaArray_t cudaMipLevelArray, cudaMipLevelArrayTemp,
 		cudaMipLevelArrayOrig;
-	cudaResourceDesc resourceDesc;
 
 	checkCudaErrors(cudaGetMipmappedArrayLevel(
 		&cudaMipLevelArray, cudaMipmappedImageArray, 0));
@@ -205,8 +206,9 @@ void CudaRenderSystem::c_importImage() {
 		&cudaMipLevelArrayOrig, cudaMipmappedImageArrayOrig, 0));
 	checkCudaErrors(cudaMemcpy2DArrayToArray(
 		cudaMipLevelArrayOrig, 0, 0, cudaMipLevelArray, 0, 0,
-		(width >> 1) * sizeof(uchar4), (height >> 1), cudaMemcpyDeviceToDevice));
+		width * sizeof(uchar4), height, cudaMemcpyDeviceToDevice)); // TODO: investigate whether it's supposed to be uchar or smth else
 
+	cudaResourceDesc resourceDesc;
 	memset(&resourceDesc, 0, sizeof(resourceDesc));
 	resourceDesc.resType = cudaResourceTypeArray;
 	resourceDesc.res.array.array = cudaMipLevelArray;
@@ -226,22 +228,22 @@ void CudaRenderSystem::c_importImage() {
 	resDescr.resType = cudaResourceTypeMipmappedArray;
 	resDescr.res.mipmap.mipmap = cudaMipmappedImageArrayOrig;
 
-	cudaTextureDesc texDescr;
-	memset(&texDescr, 0, sizeof(cudaTextureDesc));
+	// cudaTextureDesc texDescr;
+	//memset(&texDescr, 0, sizeof(cudaTextureDesc));
 
-	texDescr.normalizedCoords = true;
-	texDescr.filterMode = cudaFilterModeLinear;
-	texDescr.mipmapFilterMode = cudaFilterModeLinear;
+	//texDescr.normalizedCoords = true;
+	//texDescr.filterMode = cudaFilterModeLinear;
+	//texDescr.mipmapFilterMode = cudaFilterModeLinear;
 
-	texDescr.addressMode[0] = cudaAddressModeWrap;
-	texDescr.addressMode[1] = cudaAddressModeWrap;
+	//texDescr.addressMode[0] = cudaAddressModeWrap;
+	//texDescr.addressMode[1] = cudaAddressModeWrap;
 
-	texDescr.maxMipmapLevelClamp = 0;
+	//texDescr.maxMipmapLevelClamp = 0;
 
-	texDescr.readMode = cudaReadModeNormalizedFloat;
+	//texDescr.readMode = cudaReadModeNormalizedFloat;
 
-	checkCudaErrors(cudaCreateTextureObject(&textureObjMipMapInput, &resDescr,
-		&texDescr, NULL));
+	// checkCudaErrors(cudaCreateTextureObject(&textureObjMipMapInput, &resDescr,
+	//	&texDescr, NULL)); // TODO: I think i have to use this somewhere??? 
 
 	checkCudaErrors(cudaMalloc((void**)&d_surfaceObject,
 		sizeof(cudaSurfaceObject_t)));
@@ -312,9 +314,9 @@ void CudaRenderSystem::c_importMemory(HANDLE memoryHandle, size_t extMemSize, Vk
 void CudaRenderSystem::c_trace(VkCommandBuffer commandBuffer, int frameIndex) {
 	if (firstFrame) firstFrame = false;
 	else c_waitVkSemaphore();
-	launchPlainUV(height, width, streamToRun, surfaceObj);
+	launchPlainUV(height, width, streamToRun, d_surfaceObject);
 	c_signalVkSemaphore(); // TODO: later signal semaphore async? 
-	c_updateDescriptorSets();
+	// c_updateDescriptorSets();
 	v_pipeline->bindGraphics(commandBuffer);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[frameIndex], 0, nullptr);
 	vkCmdDraw(commandBuffer, 6, 1, 0, 0);

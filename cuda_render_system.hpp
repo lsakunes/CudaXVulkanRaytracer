@@ -57,13 +57,14 @@ public:
         c_createDescriptorSetLayout();
         c_createDescriptorPool();
         std::cout << descriptorPool << "\n";
-        c_createDescriptorSets();
         c_createPipelineLayout();
         c_createPipeline(renderPass);
         c_createImage();
         c_importImage();
         c_createImageView();
         c_createSampler();
+        c_createDescriptorSets();
+        c_updateDescriptorSets();
     }
 
     ~CudaRenderSystem() {
@@ -81,7 +82,7 @@ public:
         vkDestroySemaphore(v_device.device(), vkUpdateCudaSemaphore, nullptr);
         cudaDestroySurfaceObject(surfaceObj);
         cudaFreeArray(colorArray);
-        checkCudaErrors(cudaDestroyTextureObject(textureObjMipMapInput));
+        //checkCudaErrors(cudaDestroyTextureObject(textureObjMipMapInput));
         vkDestroySampler(v_device.device(), sampler, nullptr);
         vkDestroyDescriptorSetLayout(v_device.device(), descriptorSetLayout, nullptr);
         vkDestroyDescriptorPool(v_device.device(), descriptorPool, nullptr);
@@ -89,6 +90,10 @@ public:
         vkDestroyImageView(v_device.device(), imageView, nullptr);
         vkDestroyImage(v_device.device(), image, nullptr);
         vkFreeMemory(v_device.device(), imageMemory, nullptr);
+    }
+
+    void c_recreateEverything() {
+
     }
 
     CudaRenderSystem(const CudaRenderSystem&) = delete;
@@ -173,7 +178,7 @@ private:
     cudaExternalMemory_t cudaExtMemImageBuffer;
     cudaMipmappedArray_t cudaMipmappedImageArray, cudaMipmappedImageArrayTemp,
         cudaMipmappedImageArrayOrig;
-    cudaTextureObject_t textureObjMipMapInput;
+    // cudaTextureObject_t textureObjMipMapInput;
 
     VkImage image;
     VkDeviceMemory imageMemory;
