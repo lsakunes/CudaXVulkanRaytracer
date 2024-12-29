@@ -420,23 +420,46 @@ void CudaRenderSystem::c_trace(VkCommandBuffer commandBuffer, int frameIndex) {
 	vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 }
 
-__global__ void moveCamera(camera** d_cam, glm::vec3 position, glm::mat4 matrix) {
+__global__ void moveCamera(camera** d_cam, glm::vec3 position, glm::mat3 matrix) {
 	(*d_cam)->updateCam(position, matrix);
 }
 
 void CudaRenderSystem::c_moveCamera(glm::vec3 position, glm::vec3 rotation) {
 	if (!(position.length() > EPSILON) && !(rotation.length() > EPSILON)) return;
-	glm::mat4 viewMatrix;
 	const float c3 = glm::cos(rotation.z);
 	const float s3 = glm::sin(rotation.z);
-	const float c2 = glm::cos(rotation.x);
-	const float s2 = glm::sin(rotation.x);
-	const float c1 = glm::cos(rotation.y);
-	const float s1 = glm::sin(rotation.y);
-	const glm::vec3 u{(c1* c3 + s1 * s2 * s3), (c2* s3), (c1* s2* s3 - c3 * s1)};
-	const glm::vec3 v{(c3* s1* s2 - c1 * s3), (c2* c3), (c1* c3* s2 + s1 * s3)};
-	const glm::vec3 w{(c2* s1), (-s2), (c1* c2)};
-	viewMatrix = glm::mat4{ 1.f };
+	const float c1 = glm::cos(rotation.x);
+	const float s1 = glm::sin(rotation.x);
+	const float c2 = glm::cos(rotation.y);
+	const float s2 = glm::sin(rotation.y);
+
+	// YXZ
+	//const glm::vec3 u{(c1* c3 + s1 * s2 * s3), (c2* s3), (c1* s2* s3 - c3 * s1)};
+	//const glm::vec3 v{(c3* s1* s2 - c1 * s3), (c2* c3), (c1* c3* s2 + s1 * s3)};
+	//const glm::vec3 w{-(c2* s1), (s2), (c1* c2)};	
+
+	// YX
+	//const glm::vec3 u{c2, 0, s2};
+	//const glm::vec3 v{s1*s2, c1, -s1*c2};
+	//const glm::vec3 w{-(c1* s2), (s1), (c1* c2)};
+
+	//// YZ
+	//const glm::vec3 u{c2*c1, -s2, s2*c1};
+	//const glm::vec3 v{s1 * c2, c1, s1 * s2};
+	//const glm::vec3 w{-s2, 0, c2};
+
+	// ZY
+	//const glm::vec3 u{c2*c1, -s1*c2, s2};
+	//const glm::vec3 v{s1, c1, 0};
+	//const glm::vec3 w{-s2*c1, s1*s2, c2};
+
+	// XY
+	const glm::vec3 u{c2, s1*s2, s2*c1};
+	const glm::vec3 v{0, c1, -s1};
+	const glm::vec3 w{-s2, s1*c2, (c1* c2)};
+
+	glm::mat3 viewMatrix = glm::mat3{ 1.f };
+	// column row index
 	viewMatrix[0][0] = u.x;
 	viewMatrix[1][0] = u.y;
 	viewMatrix[2][0] = u.z;
@@ -446,9 +469,9 @@ void CudaRenderSystem::c_moveCamera(glm::vec3 position, glm::vec3 rotation) {
 	viewMatrix[0][2] = w.x;
 	viewMatrix[1][2] = w.y;
 	viewMatrix[2][2] = w.z;
-	viewMatrix[3][0] = -glm::dot(u, position);
-	viewMatrix[3][1] = -glm::dot(v, position);
-	viewMatrix[3][2] = -glm::dot(w, position);
+	//viewMatrix[0][3] = -glm::dot(u, position);
+	//viewMatrix[1][3] = -glm::dot(v, position);
+	//viewMatrix[2][3] = -glm::dot(w, position);
 
 	LAUNCH_KERNEL(moveCamera, 1, 3, 0, streamToRun, d_cam, position, viewMatrix); // TODO: figure out blocks and threads
 }

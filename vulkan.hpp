@@ -22,8 +22,8 @@ namespace v{
 
 class Vulkan {
 public:
-    static constexpr int WIDTH = 800;
-    static constexpr int HEIGHT = 600;
+    static constexpr int WIDTH = 512*2;
+    static constexpr int HEIGHT = 512;
 
     Vulkan();
     ~Vulkan();

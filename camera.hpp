@@ -36,26 +36,26 @@ public:
 		horizontal = 2.0 * half_width * focusDist * u;
 	}
 
-	__device__ void vectorMatrixMult(glm::vec4 vec, glm::mat4 matrix, vec3& out) {
+	__device__ void moveCamera(glm::vec3 position, glm::vec3 vec, glm::mat3 matrix, vec3& out) {
 		int tid = threadIdx.x + blockIdx.x * blockDim.x;
 		float sum = 0;
-		if (tid < 4) {
+		if (tid < 3) {
 			sum += vec[0] * matrix[0][tid];
 			sum += vec[1] * matrix[1][tid];
 			sum += vec[2] * matrix[2][tid];
-			sum += vec[3] * matrix[3][tid];
 			out[tid] = sum;
 		}
 	}
 
-	__device__ void moveCamPoints(glm::mat4 matrix) {
-		vectorMatrixMult(glm::vec4(originalLookAt.x(), originalLookAt.y(), originalLookAt.z(), 1), matrix, lookAt);
+	__device__ void moveCamPoints(glm::vec3 position, glm::mat3 matrix) {
+		moveCamera(position, glm::vec3(originalLookAt.x(), originalLookAt.y(), originalLookAt.z()), matrix, lookAt);
+		lookAt += origin;
 	}
 
 
-	__device__ void updateCam(glm::vec3 position, glm::mat4 matrix) {
+	__device__ void updateCam(glm::vec3 position, glm::mat3 matrix) {
 		origin = vec3(position.x, position.y, position.z);
-		moveCamPoints(matrix);
+		moveCamPoints(position, matrix);
 		lens_radius = aperture / 2;
 		float theta = vFov * PI / 180;
 		float half_height = tan(theta / 2);

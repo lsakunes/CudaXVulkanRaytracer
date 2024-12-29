@@ -60,7 +60,7 @@ void bar(int j,int ny){;;;;;;;;;;
 };;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 __device__ color ray_color(const ray& r, hitable **world, curandState* local_rand_state) {
-	vec3 bgColor(0.05, 0.05, 0.1);
+	vec3 bgColor(0.05, 0.05, 0.2);
 	ray cur_ray = r;
 	vec3 cur_attenuation = vec3(1.0, 1.0, 1.0);
 	vec3 emitted = vec3(0, 0, 0);
@@ -134,17 +134,17 @@ __global__ void create_world(hitable** d_list, hitable** d_world, camera** d_cam
 		d_list[1] = new sphere(vec3(0, 0.5, -1), 0.5,
 			new metal(new image_texture(tex_data, texnx, texny), 0.9));
 		d_list[2] = new sphere(vec3(1, 0.8, 0.3), 0.8,
-			new Emit(new constant_texture(vec3(1, 4, 3))));
-		d_list[3] = new triangle(vec3(0, 0, -3), vec3(2, 0, -2.8), vec3(0.5, 1.5, -2.7), 
-			new metal(new constant_texture(vec3(1, 0.8, 0.9)), 0.5));
-		d_list[4] = new sphere(vec3(-0.25, 0.3, -0.5), 0.3,
+			new Emit(new constant_texture(vec3(2, 2, 2))));
+		d_list[3] = new triangle(vec3(0, 0, -3), vec3(2, 0, -3), vec3(1, 2, -3), 
+			new metal(new constant_texture(vec3(1, 1,1)), 0));
+		d_list[4] = new sphere(vec3(-0.25, 0.3, 0), 0.3,
 			new dielectric(1.5));
 		*d_world = new hitable_list(d_list, numSpheres);
 		float R = cos(PI / 4);
 
-		vec3 lookfrom(-5, 2, 3);
-		vec3 lookat(0, 0.5, -1);
-		float dist_to_focus = (lookfrom - lookat).length();
+		vec3 lookfrom(0, 0, 0);
+		vec3 lookat(0, 0, 1);
+		float dist_to_focus = 5;
 		float aperture = 0.05;
 		*d_cam = new camera(lookfrom, lookat, vec3(0,-1,0), 20, float(nx)/float(ny), aperture, dist_to_focus, 0, 1);
 	}
