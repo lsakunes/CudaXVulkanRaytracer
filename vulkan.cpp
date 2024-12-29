@@ -6,9 +6,6 @@ namespace v {
 __global__ void Vulkan::run() {
     CudaRenderSystem cudaRenderSystem{ v_device, V_SwapChain::MAX_FRAMES_IN_FLIGHT, cudaUpdateVkSemaphore, vkUpdateCudaSemaphore, &gameObjects, v_window.getExtent().height, v_window.getExtent().width, v_renderer.getSwapChainRenderPass()};
 
-    
-    V_Camera camera{};
-    camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
 
     auto viewerObject = V_GameObject::createGameObject();
     KeyboardMovementController cameraController{};
@@ -26,11 +23,9 @@ __global__ void Vulkan::run() {
         currentTime = newTime;
 
         cameraController.moveInPlaneXZ(v_window.getGLFWwindow(), frameTime, viewerObject);
-        camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
+        cudaRenderSystem.c_moveCamera(viewerObject.transform.translation, viewerObject.transform.rotation);
 
         float aspect = v_renderer.getAspectRatio();
-        //camera.setOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
-        camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 10.f);
         if (auto commandBuffer = v_renderer.beginFrame()) {
             cudaRenderSystem.c_createPipelineBarrier(commandBuffer);
             v_renderer.beginSwapChainRenderPass(commandBuffer);

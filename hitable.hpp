@@ -24,13 +24,12 @@ public:
 };
 
 __device__ aabb surrounding_box(aabb box0, aabb box1) {
-	vec3 small(fmin(box0.min().x(), box1.min().x()),
-		fmin(box0.min().y(), box1.min().y()),
-		fmin(box0.min().z(), box1.min().z()));
-	vec3 big(fmax(box0.max().x(), box1.max().x()),
-		fmax(box0.max().y(), box1.max().y()),
-		fmax(box0.max().z(), box1.max().z()));
-	return aabb(small, big);
-
+	vec3 smallBox(fmin(box0.minPoint().x(), box1.minPoint().x()),
+		fmin(box0.minPoint().y(), box1.minPoint().y()),
+		fmin(box0.minPoint().z(), box1.minPoint().z()));
+	vec3 big(fmax(box0.maxPoint().x(), box1.maxPoint().x()),
+		fmax(box0.maxPoint().y(), box1.maxPoint().y()),
+		fmax(box0.maxPoint().z(), box1.maxPoint().z()));
+	return aabb(smallBox, big);
 }
 #endif

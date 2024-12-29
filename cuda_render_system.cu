@@ -1,11 +1,14 @@
-#include "cuda_render_system.hpp"
+#include "cuda_render_system.cuh"
 
 #include "windowsSecurity.hpp"
 #include <cstring>
 #include <cassert>
 #include "kernel.cuh"
-
+#include "v_gameobject.hpp"
 #include "v_utils.hpp"
+
+
+#define EPSILON 0.01f
 
 //namespace std {
 //	template<>
@@ -260,6 +263,99 @@ void CudaRenderSystem::c_importImage() {
 	printf("CUDA Kernel Vulkan image buffer\n");
 }
 
+CudaRenderSystem::CudaRenderSystem(
+	V_Device& device, uint32_t nSwapChainImages, VkSemaphore cudaToVkSemaphore, VkSemaphore vkToCudaSemaphore,
+	std::vector<V_GameObject>* objects, uint32_t h, uint32_t w, VkRenderPass renderPass) : height(h), width(w),
+v_device(device), cudaUpdateVkSemaphore(cudaToVkSemaphore),
+vkUpdateCudaSemaphore(vkToCudaSemaphore), gameObjects(objects), numSwapChainImages(nSwapChainImages) {
+
+	c_createFunctions();
+	c_createModel();
+
+	checkCudaErrors(cudaStreamCreate(&streamToRun));
+	c_importVkSemaphore();
+	c_createSurfaceAndColorArray();
+	c_createDescriptorSetLayout();
+	c_createDescriptorPool();
+	std::cout << descriptorPool << "\n";
+	c_createPipelineLayout();
+	c_createPipeline(renderPass);
+	c_createImage();
+	c_importImage();
+	c_createImageView();
+	c_createSampler();
+	c_createDescriptorSets();
+	c_updateDescriptorSets();
+
+	samples = 1;
+
+	uint32_t idealSquareSize = 50; // ???
+	int tx = ceil(width / idealSquareSize);
+	int ty = ceil(height / idealSquareSize);
+
+	blocks = dim3(width / tx + 1, height / ty + 1);
+	threads = dim3(tx, ty);
+
+	checkCudaErrors(cudaMalloc((void**)&d_rand_state, width * height * sizeof(curandState)));
+	cudaDeviceSetLimit(cudaLimitStackSize, 8192);
+
+	int texnx, texny, texnn;
+	tex_data = stbi_load("earthmap.jpg", &texnx, &texny, &texnn, 0);
+	checkCudaErrors(cudaMalloc((void**)&d_tex_data, sizeof(unsigned char) * texnx * texny * 3));
+	checkCudaErrors(cudaMemcpy(d_tex_data, tex_data, sizeof(unsigned char) * texnx * texny * 3, cudaMemcpyHostToDevice));
+
+	LAUNCH_KERNEL(render_init, blocks, threads, 0, streamToRun, width, height, d_rand_state, 0);
+	checkCudaErrors(cudaGetLastError());
+	checkCudaErrors(cudaDeviceSynchronize());
+
+	checkCudaErrors(cudaMalloc((void**)&ranvec, sizeof(vec3*)));
+	checkCudaErrors(cudaMalloc((void**)&perm_x, sizeof(int*)));
+	checkCudaErrors(cudaMalloc((void**)&perm_y, sizeof(int*)));
+	checkCudaErrors(cudaMalloc((void**)&perm_z, sizeof(int*)));
+
+	checkCudaErrors(cudaMalloc((void**)&d_cam, sizeof(camera*)));
+	checkCudaErrors(cudaMalloc((void**)&d_list, numSpheres * sizeof(hitable*)));
+	checkCudaErrors(cudaMalloc((void**)&d_world, sizeof(hitable*)));
+
+	LAUNCH_KERNEL(create_world, 1, 1, 0, streamToRun, d_list, d_world, d_cam, numSpheres, width, height, ranvec, perm_x, perm_y, perm_z, d_rand_state, d_tex_data, texnx, texny);
+}
+
+CudaRenderSystem::~CudaRenderSystem() {
+	checkCudaErrors(cudaDestroyExternalSemaphore(extVulkanHandledSemaphore));
+	checkCudaErrors(cudaDestroyExternalSemaphore(extCudaHandledSemaphore));
+	//checkCudaErrors(cudaDestroyExternalMemory(cudaExtMemImageBuffer)); //TODO: remember to uncomment this when we start using it
+	checkCudaErrors(cudaDestroySurfaceObject(surfaceObject));
+	checkCudaErrors(cudaDestroySurfaceObject(surfaceObjectTemp));
+	checkCudaErrors(cudaFree(d_surfaceObject));
+	checkCudaErrors(cudaFree(d_surfaceObjectTemp));
+	checkCudaErrors(cudaFreeMipmappedArray(cudaMipmappedImageArrayTemp));
+	checkCudaErrors(cudaFreeMipmappedArray(cudaMipmappedImageArrayOrig));
+	checkCudaErrors(cudaFreeMipmappedArray(cudaMipmappedImageArray));
+	vkDestroySemaphore(v_device.device(), cudaUpdateVkSemaphore, nullptr);
+	vkDestroySemaphore(v_device.device(), vkUpdateCudaSemaphore, nullptr);
+	cudaDestroySurfaceObject(surfaceObj);
+	cudaFreeArray(colorArray);
+	//checkCudaErrors(cudaDestroyTextureObject(textureObjMipMapInput));
+	vkDestroySampler(v_device.device(), sampler, nullptr);
+	vkDestroyDescriptorSetLayout(v_device.device(), descriptorSetLayout, nullptr);
+	vkDestroyDescriptorPool(v_device.device(), descriptorPool, nullptr);
+	vkDestroyPipelineLayout(v_device.device(), pipelineLayout, nullptr);
+	vkDestroyImageView(v_device.device(), imageView, nullptr);
+	vkDestroyImage(v_device.device(), image, nullptr);
+	vkFreeMemory(v_device.device(), imageMemory, nullptr);
+
+	LAUNCH_KERNEL(free_world, 1, 1, 0, streamToRun, d_list, d_world, d_cam, numSpheres, ranvec, perm_x, perm_y, perm_z, d_tex_data);
+	checkCudaErrors(cudaGetLastError());
+	checkCudaErrors(cudaFree(d_tex_data));
+	checkCudaErrors(cudaFree(d_cam));
+	checkCudaErrors(cudaFree(d_world));
+	checkCudaErrors(cudaFree(d_list));
+	checkCudaErrors(cudaFree(d_rand_state));
+
+
+	cudaDeviceReset();
+}
+
 void CudaRenderSystem::c_createSampler() {
 	VkSamplerCreateInfo samplerCreateInfo{};
 	samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -314,12 +410,47 @@ void CudaRenderSystem::c_importMemory(HANDLE memoryHandle, size_t extMemSize, Vk
 void CudaRenderSystem::c_trace(VkCommandBuffer commandBuffer, int frameIndex) {
 	if (firstFrame) firstFrame = false;
 	else c_waitVkSemaphore();
-	launchPlainUV(height, width, streamToRun, d_surfaceObject);
+	LAUNCH_KERNEL(render<RGBA32>, blocks, threads, 0, streamToRun, d_surfaceObject, width, height, samples, d_cam, d_world, d_rand_state);
+	checkCudaErrors(cudaGetLastError());
+	checkCudaErrors(cudaDeviceSynchronize());
 	c_signalVkSemaphore(); // TODO: later signal semaphore async? 
 	// c_updateDescriptorSets();
 	v_pipeline->bindGraphics(commandBuffer);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[frameIndex], 0, nullptr);
 	vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+}
+
+__global__ void moveCamera(camera** d_cam, glm::vec3 position, glm::mat4 matrix) {
+	(*d_cam)->updateCam(position, matrix);
+}
+
+void CudaRenderSystem::c_moveCamera(glm::vec3 position, glm::vec3 rotation) {
+	if (!(position.length() > EPSILON) && !(rotation.length() > EPSILON)) return;
+	glm::mat4 viewMatrix;
+	const float c3 = glm::cos(rotation.z);
+	const float s3 = glm::sin(rotation.z);
+	const float c2 = glm::cos(rotation.x);
+	const float s2 = glm::sin(rotation.x);
+	const float c1 = glm::cos(rotation.y);
+	const float s1 = glm::sin(rotation.y);
+	const glm::vec3 u{(c1* c3 + s1 * s2 * s3), (c2* s3), (c1* s2* s3 - c3 * s1)};
+	const glm::vec3 v{(c3* s1* s2 - c1 * s3), (c2* c3), (c1* c3* s2 + s1 * s3)};
+	const glm::vec3 w{(c2* s1), (-s2), (c1* c2)};
+	viewMatrix = glm::mat4{ 1.f };
+	viewMatrix[0][0] = u.x;
+	viewMatrix[1][0] = u.y;
+	viewMatrix[2][0] = u.z;
+	viewMatrix[0][1] = v.x;
+	viewMatrix[1][1] = v.y;
+	viewMatrix[2][1] = v.z;
+	viewMatrix[0][2] = w.x;
+	viewMatrix[1][2] = w.y;
+	viewMatrix[2][2] = w.z;
+	viewMatrix[3][0] = -glm::dot(u, position);
+	viewMatrix[3][1] = -glm::dot(v, position);
+	viewMatrix[3][2] = -glm::dot(w, position);
+
+	LAUNCH_KERNEL(moveCamera, 1, 3, 0, streamToRun, d_cam, position, viewMatrix); // TODO: figure out blocks and threads
 }
 
 void CudaRenderSystem::c_signalVkSemaphore() {

@@ -61,8 +61,7 @@
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.268.0\Lib;C:\Users\senuk\source\Graphics\Libraries\glfw-3.3.8.bin.WIN64\lib-vc2022;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <ForceFileOutput>
-      </ForceFileOutput>
+      <ForceFileOutput>Enabled</ForceFileOutput>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
     </Link>
@@ -72,6 +71,7 @@
       </Include>
       <Defines>WIN32;WIN64;</Defines>
       <CodeGeneration>compute_86,sm_86</CodeGeneration>
+      <AdditionalOptions>-v -std=c++17 %(AdditionalOptions)</AdditionalOptions>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -91,8 +91,7 @@
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.268.0\Lib;C:\Users\senuk\source\Graphics\Libraries\glfw-3.3.8.bin.WIN64\lib-vc2022;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <ForceFileOutput>
-      </ForceFileOutput>
+      <ForceFileOutput>Enabled</ForceFileOutput>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
     </Link>
@@ -102,6 +101,7 @@
       </Include>
       <Defines>WIN32;WIN64;</Defines>
       <CodeGeneration>compute_86,sm_86</CodeGeneration>
+      <AdditionalOptions>-v -std=c++17 %(AdditionalOptions)</AdditionalOptions>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -110,7 +110,9 @@
     <CudaCompile Include="cudaMain.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cuda_render_system.cpp" />
+    <CudaCompile Include="cuda_render_system.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
     <ClCompile Include="keyboard_movement_controller.cpp" />
     <ClCompile Include="vulkan.cpp" />
     <ClCompile Include="v_camera.cpp" />
@@ -129,7 +131,7 @@
     <ClInclude Include="bvh.hpp" />
     <ClInclude Include="camera.hpp" />
     <ClInclude Include="color.hpp" />
-    <ClInclude Include="cuda_render_system.hpp" />
+    <CudaCompile Include="cuda_render_system.cuh" />
     <ClInclude Include="denoiser.hpp" />
     <ClInclude Include="hitable.hpp" />
     <ClInclude Include="hitable_list.hpp" />

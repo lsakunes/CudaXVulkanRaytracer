@@ -1,29 +1,73 @@
 #ifndef CAMERAH
 #define CAMERAH
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+
 #include "ray.hpp"
 #include <curand_kernel.h>
 #define PI 3.14159
 
-__device__ vec3 random_in_unit_disk(curandState* localState);
+__device__ vec3 random_in_unit_disk(curandState* localState) {
+	vec3 p;
+	do {
+		p = 2.0 * vec3(curand_uniform(localState), curand_uniform(localState), 0) - vec3(1, 1, 0);
+	} while (dot(p, p) >= 1.0);
+	return p;
+}
 
 class camera {
 public:
-	__device__ camera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspect, float aperture, float focus_dist, float t0, float t1) {
+	__device__ camera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float asp, float aper, float focus, float t0, float t1) : origin(lookfrom), lookAt(lookat), vUp(vup), vFov(vfov), aspectRatio(asp), aperture(aper), focusDist(focus) {
 		time0 = t0;
 		time1 = t1;
-		lens_radius = aperture / 2;
-		float theta = vfov * PI / 180;
-		float half_height = tan(theta / 2);
-		float half_width = aspect * half_height;
+		originalLookAt = lookAt;
 		origin = lookfrom;
-		w = unit_vector(lookfrom - lookat);
-		u = unit_vector(cross(vup, w));
+		lens_radius = aperture / 2;
+		float theta = vFov * PI / 180;
+		float half_height = tan(theta / 2);
+		float half_width = aspectRatio * half_height;
+		w = unit_vector(origin - lookAt);
+		u = unit_vector(cross(vUp, w));
 		v = cross(w, u);
-		lower_left_corner = origin - half_width * focus_dist * u - half_height * focus_dist * v - focus_dist * w;
-		vertical = 2.0 * half_height * focus_dist * v;
-		horizontal = 2.0*half_width * focus_dist * u;
+		lower_left_corner = origin - half_width * focusDist * u - half_height * focusDist * v - focusDist * w;
+		vertical = 2.0 * half_height * focusDist * v;
+		horizontal = 2.0 * half_width * focusDist * u;
 	}
+
+	__device__ void vectorMatrixMult(glm::vec4 vec, glm::mat4 matrix, vec3& out) {
+		int tid = threadIdx.x + blockIdx.x * blockDim.x;
+		float sum = 0;
+		if (tid < 4) {
+			sum += vec[0] * matrix[0][tid];
+			sum += vec[1] * matrix[1][tid];
+			sum += vec[2] * matrix[2][tid];
+			sum += vec[3] * matrix[3][tid];
+			out[tid] = sum;
+		}
+	}
+
+	__device__ void moveCamPoints(glm::mat4 matrix) {
+		vectorMatrixMult(glm::vec4(originalLookAt.x(), originalLookAt.y(), originalLookAt.z(), 1), matrix, lookAt);
+	}
+
+
+	__device__ void updateCam(glm::vec3 position, glm::mat4 matrix) {
+		origin = vec3(position.x, position.y, position.z);
+		moveCamPoints(matrix);
+		lens_radius = aperture / 2;
+		float theta = vFov * PI / 180;
+		float half_height = tan(theta / 2);
+		float half_width = aspectRatio * half_height;
+		w = unit_vector(origin - lookAt);
+		u = unit_vector(cross(vUp, w));
+		v = cross(w, u);
+		lower_left_corner = origin - half_width * focusDist * u - half_height * focusDist * v - focusDist * w;
+		vertical = 2.0 * half_height * focusDist * v;
+		horizontal = 2.0 * half_width * focusDist * u;
+	}
+
 	__device__ ray get_ray(float s, float t, curandState* localState) {
 		vec3 rd = lens_radius * random_in_unit_disk(localState);
 		vec3 offset = u * rd.x() + v * rd.y();
@@ -38,5 +82,8 @@ public:
 	vec3 u, v, w;
 	float time0, time1;
 	float lens_radius;
+	vec3 originalLookAt;
+	vec3 lookAt, vUp;
+	float vFov, aspectRatio, aperture, focusDist;
 };
 #endif

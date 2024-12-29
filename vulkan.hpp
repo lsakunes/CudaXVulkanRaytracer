@@ -15,7 +15,7 @@
 #include "v_device.hpp"
 #include "v_gameobject.hpp"
 #include "v_renderer.hpp"
-#include "cuda_render_system.hpp"
+#include "cuda_render_system.cuh"
 #include "windowsSecurity.hpp"
 
 namespace v{

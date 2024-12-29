@@ -79,7 +79,7 @@ int box_x_compare(const void* a, const void* b) {
 	hitable* bh = *(hitable**)b;
 	if (!ah->bounding_box(0, 0, box_left) || !bh->bounding_box(0, 0, box_right))
 		std::cerr << "no bounding box in bvh_node constructor\n";
-	if (box_left.min().x() - box_right.min().x() < 0.0)
+	if (box_left.minPoint().x() - box_right.minPoint().x() < 0.0)
 		return -1;
 	else
 		return 1;

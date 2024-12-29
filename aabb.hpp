@@ -7,9 +7,13 @@ inline float ffmax(float a, float b) { return a > b ? a : b; }
 class aabb {
 public:
 	__device__ aabb() {}
-	__device__ aabb(const vec3& a, const vec3& b) : _min(a), _max(b) {}
-	__device__ vec3 min() const { return _min; }
-	__device__ vec3 max()  const { return _max; }
+	__device__ aabb(const vec3& a, const vec3& b) {
+		_min = a;
+		_max = b;
+	}
+
+	__device__ vec3 minPoint() const { return _min; }
+	__device__ vec3 maxPoint()  const { return _max; }
 	__device__ bool hit(const ray& r, float tmin, float tmax) const {
 		for (int a = 0; a < 3; a++) {
 			float invD = 1.0f / r.direction()[a];
@@ -24,6 +28,7 @@ public:
 		}
 		return true;
 	}
+
 	vec3 _min;
 	vec3 _max;
 };

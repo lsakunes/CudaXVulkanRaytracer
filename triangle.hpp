@@ -23,7 +23,7 @@ public:
 	};
 	__device__ virtual bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const;
 	__device__ bool bounding_box(float t0, float t1, aabb& box) const {
-		bounding_box(box);
+		return bounding_box(box);
 	}
 	__device__ virtual bool bounding_box(aabb& box) const;
 	vec3 point1, point2, point3;
@@ -85,6 +85,7 @@ __device__ vec3 minVec(vec3 p1, vec3 p2, vec3 p3) {
 	float z = p1.z();
 	z = p2.z() < z ? z : p2.z();
 	z = p3.z() < z ? z : p3.z();
+	return vec3(x, y, z);
 }
 __device__ vec3 maxVec(vec3 p1, vec3 p2, vec3 p3) {
 	float x = p1.x();
@@ -96,6 +97,7 @@ __device__ vec3 maxVec(vec3 p1, vec3 p2, vec3 p3) {
 	float z = p1.z();
 	z = p2.z() > z ? z : p2.z();
 	z = p3.z() > z ? z : p3.z();
+	return vec3(x, y, z);
 }
 
 __device__ bool triangle::bounding_box(aabb& box) const {

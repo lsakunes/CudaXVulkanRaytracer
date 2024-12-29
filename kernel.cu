@@ -51,6 +51,7 @@ __global__ void copySurfaceToBuffer(cudaSurfaceObject_t* surface, unsigned char*
 	}
 }
 
+
 template<class Rgb>
 __global__ void plainUV(cudaSurfaceObject_t* surface, int nWidth, int nHeight) {
 	int x = (threadIdx.x + blockIdx.x * blockDim.x);

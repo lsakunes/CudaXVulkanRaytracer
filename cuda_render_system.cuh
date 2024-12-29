@@ -7,14 +7,33 @@
 #include "v_camera.hpp"
 #include <cuda_runtime.h>
 #include <windows.h>
-#include "device_launch_parameters.h"
+#include <device_launch_parameters.h>
 #include <iostream>
 #include <vector>
-#include "kernel.cuh"
+#include <curand_kernel.h>
+//#include "kernel.cuh"
+#include "cudaMain.cu"
+
+#define STB_IMAGE_IMPLEMENTATION 
+#include "stb_image.h" 
 
 #include <vulkan/vulkan_win32.h>
 
+#ifdef __INTELLISENSE__
+#define LAUNCH_KERNEL(kernel, grid, block, shared, stream, ...) kernel
+#else
+#define LAUNCH_KERNEL(kernel, grid, block, shared, stream, ...) kernel<<<grid, block, shared, stream>>>(__VA_ARGS__)
+#endif
+
 namespace v {
+
+union RGBA32 {
+    uint32_t d;
+    uchar4 v;
+    struct {
+        uint8_t r, g, b, a;
+    } c;
+};
 
 class CudaRenderSystem {
 public:
@@ -34,53 +53,9 @@ public:
 
     CudaRenderSystem(
         V_Device& device, uint32_t nSwapChainImages, VkSemaphore cudaToVkSemaphore, VkSemaphore vkToCudaSemaphore,
-        std::vector<V_GameObject>* objects, uint32_t h, uint32_t w, VkRenderPass renderPass) : height(h), width(w),
-        v_device(device), cudaUpdateVkSemaphore(cudaToVkSemaphore),
-        vkUpdateCudaSemaphore(vkToCudaSemaphore), gameObjects(objects), numSwapChainImages(nSwapChainImages) {
+        std::vector<V_GameObject>* objects, uint32_t h, uint32_t w, VkRenderPass renderPass);
 
-        c_createFunctions();
-        c_createModel();
-
-        checkCudaErrors(cudaStreamCreate(&streamToRun));
-        c_importVkSemaphore();
-        c_createSurfaceAndColorArray();
-        c_createDescriptorSetLayout();
-        c_createDescriptorPool();
-        std::cout << descriptorPool << "\n";
-        c_createPipelineLayout();
-        c_createPipeline(renderPass);
-        c_createImage();
-        c_importImage();
-        c_createImageView();
-        c_createSampler();
-        c_createDescriptorSets();
-        c_updateDescriptorSets();
-    }
-
-    ~CudaRenderSystem() {
-        checkCudaErrors(cudaDestroyExternalSemaphore(extVulkanHandledSemaphore));
-        checkCudaErrors(cudaDestroyExternalSemaphore(extCudaHandledSemaphore));
-        //checkCudaErrors(cudaDestroyExternalMemory(cudaExtMemImageBuffer)); //TODO: remember to uncomment this when we start using it
-        checkCudaErrors(cudaDestroySurfaceObject(surfaceObject));
-        checkCudaErrors(cudaDestroySurfaceObject(surfaceObjectTemp));
-        checkCudaErrors(cudaFree(d_surfaceObject));
-        checkCudaErrors(cudaFree(d_surfaceObjectTemp));
-        checkCudaErrors(cudaFreeMipmappedArray(cudaMipmappedImageArrayTemp));
-        checkCudaErrors(cudaFreeMipmappedArray(cudaMipmappedImageArrayOrig));
-        checkCudaErrors(cudaFreeMipmappedArray(cudaMipmappedImageArray));
-        vkDestroySemaphore(v_device.device(), cudaUpdateVkSemaphore, nullptr);
-        vkDestroySemaphore(v_device.device(), vkUpdateCudaSemaphore, nullptr);
-        cudaDestroySurfaceObject(surfaceObj);
-        cudaFreeArray(colorArray);
-        //checkCudaErrors(cudaDestroyTextureObject(textureObjMipMapInput));
-        vkDestroySampler(v_device.device(), sampler, nullptr);
-        vkDestroyDescriptorSetLayout(v_device.device(), descriptorSetLayout, nullptr);
-        vkDestroyDescriptorPool(v_device.device(), descriptorPool, nullptr);
-        vkDestroyPipelineLayout(v_device.device(), pipelineLayout, nullptr);
-        vkDestroyImageView(v_device.device(), imageView, nullptr);
-        vkDestroyImage(v_device.device(), image, nullptr);
-        vkFreeMemory(v_device.device(), imageMemory, nullptr);
-    }
+    ~CudaRenderSystem();
 
     void c_recreateEverything() {
 
@@ -93,6 +68,7 @@ public:
 
     void c_trace(VkCommandBuffer commandBuffer, int frameIndex);
 
+    void c_moveCamera(glm::vec3 translation, glm::vec3 rotation);
 private:
     void c_signalVkSemaphore();
     HANDLE getVkMemoryHandle(VkDeviceMemory device_memory);
@@ -188,12 +164,31 @@ private:
     VkDescriptorPool descriptorPool;
 
 
+    curandState* d_rand_state;
+
+    camera** d_cam;
+    hitable** d_list;
+    hitable** d_world;
+    unsigned char* d_tex_data;
+    uint32_t samples;
+
+    dim3 blocks;
+    dim3 threads;
+
+
+    vec3* ranvec;
+    int* perm_x;
+    int* perm_z;
+    int* perm_y;
+
 
     uint32_t height, width;
 
 
     void* vertexBufferPtr;
     bool firstFrame = true;
+
+    unsigned char* tex_data;
 };
 }
 

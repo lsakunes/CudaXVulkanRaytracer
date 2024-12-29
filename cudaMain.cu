@@ -3,9 +3,6 @@
 #include <time.h>
 #include <curand_kernel.h>
 
-#define STB_IMAGE_IMPLEMENTATION 
-#include "stb_image.h" 
-
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include "stdio.h"
@@ -26,7 +23,15 @@
 __device__ float MAXFLOAT = 999;
 __device__ int MAX_BOUNCES = 5;
 
+__device__ int rgbaFloatToInt(float4 rgba) {
+	int r = static_cast<int>(rgba.x * 255.0f);
+	int g = static_cast<int>(rgba.y * 255.0f);
+	int b = static_cast<int>(rgba.z * 255.0f);
+	int a = static_cast<int>(rgba.w * 255.0f);
 
+	//return (r << 24) | (g << 16) | (b << 8) | a;
+	return (a << 24) | (b << 16) | (g << 8) | r; //TODO: investigate
+}
 
 int numSpheres = 5;
 
@@ -91,7 +96,8 @@ __global__ void render_init(int max_x, int max_y, curandState* rand_state, int s
 	curand_init(1984 * seed, pixel_index, 0, &rand_state[pixel_index]);
 }
 
-__global__ void render(color* fb, int max_x, int max_y, int samples, camera **d_cam, hitable** world, curandState* rand_state) {
+template<class Rgb>
+__global__ void render(cudaSurfaceObject_t* surface, int max_x, int max_y, int samples, camera **d_cam, hitable** world, curandState* rand_state) {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 	int j = threadIdx.y + blockIdx.y * blockDim.y;
 	if ((i >= max_x) || (j >= max_y)) return;
@@ -99,14 +105,17 @@ __global__ void render(color* fb, int max_x, int max_y, int samples, camera **d_
 	curandState local_rand_state = rand_state[pixel_index];
 	vec3 col(0, 0, 0);
 	for (int s = 0; s < samples; s++) {
-		if (pixel_index == 50000) printf("sample: %d\n", s);
+		// if (pixel_index == 50000) printf("sample: %d\n", s);
 		auto u = double(i + curand_uniform(&local_rand_state)) / (max_x - 1);
 		auto v = double(j + curand_uniform(&local_rand_state)) / (max_y - 1);
 		ray r = (*d_cam)->get_ray(u, v, &local_rand_state);
 		col += ray_color(r, world, &local_rand_state);
 	}
 	rand_state[pixel_index] = local_rand_state;
-	fb[pixel_index] = col / float(samples);
+	col = col / float(samples);
+	int color = rgbaFloatToInt(float4{ col.x(), col.y(), col.z(), 1 });
+	// surf2Dwrite(color, surface[0], i * sizeof(Rgb), j);
+	surf2Dwrite(color, surface[0], i * sizeof(Rgb), j);
 }
 
 __global__ void create_world(hitable** d_list, hitable** d_world, camera** d_cam, int numSpheres, int nx, int ny, vec3* ranvec, int* perm_x, int* perm_y, int* perm_z, curandState* localState, unsigned char* tex_data, int texnx, int texny) {
@@ -137,7 +146,7 @@ __global__ void create_world(hitable** d_list, hitable** d_world, camera** d_cam
 		vec3 lookat(0, 0.5, -1);
 		float dist_to_focus = (lookfrom - lookat).length();
 		float aperture = 0.05;
-		*d_cam = new camera(lookfrom, lookat, vec3(0,1,0), 20, float(nx)/float(ny), aperture, dist_to_focus, 0, 1);
+		*d_cam = new camera(lookfrom, lookat, vec3(0,-1,0), 20, float(nx)/float(ny), aperture, dist_to_focus, 0, 1);
 	}
 }
 
@@ -155,104 +164,77 @@ __global__ void free_world(hitable** d_list, hitable** d_world, camera** d_cam, 
 	delete tex_data;
 }
 
-int cmain() {
-	// hmmmm
-	cudaDeviceSetLimit(cudaLimitStackSize, 8192);
-	// hmmmmmmmm
-
-	int nx = 512*4;
-	int ny = 512*2;
-	float idealSquareSize = 512;
-	int samples = 50;
-
-	int tx = ceil(nx / idealSquareSize);
-	int ty = ceil(ny / idealSquareSize);
-
-	std::cerr << "Rendering a " << nx << "x" << ny << " image ";
-	std::cerr << "in " << tx << "x" << ty << " blocks.\n";
-
-	clock_t start, stop;
-	start = clock();
-
-	int num_pixels = nx * ny;
-	size_t fb_size = num_pixels * sizeof(color);
-
-	curandState* d_rand_state;
-	checkCudaErrors(cudaMalloc((void**)&d_rand_state, num_pixels * sizeof(curandState)));
-
-	dim3 blocks(nx / tx + 1, ny / ty + 1);
-	dim3 threads(tx, ty);
-	render_init << <blocks, threads >> > (nx, ny, d_rand_state, 0);
-	checkCudaErrors(cudaGetLastError());
-	checkCudaErrors(cudaDeviceSynchronize());
-
-	int texnx, texny, texnn;
-	unsigned char* tex_data = stbi_load("earthmap.jpg", &texnx, &texny, &texnn, 0);
-	unsigned char* d_tex_data;
-	checkCudaErrors(cudaMalloc((void**)&d_tex_data, sizeof(unsigned char) * texnx * texny * 3));
-	checkCudaErrors(cudaMemcpy(d_tex_data, tex_data, sizeof(unsigned char) * texnx * texny * 3, cudaMemcpyHostToDevice));
-
-	vec3* ranvec;
-	checkCudaErrors(cudaMalloc((void**)&ranvec, sizeof(vec3*)));
-	int* perm_x;
-	checkCudaErrors(cudaMalloc((void**)&perm_x, sizeof(int*)));
-	int* perm_y;
-	checkCudaErrors(cudaMalloc((void**)&perm_y, sizeof(int*)));
-	int* perm_z;
-	checkCudaErrors(cudaMalloc((void**)&perm_z, sizeof(int*)));
-
-	camera** d_cam;
-	checkCudaErrors(cudaMalloc((void**)&d_cam, sizeof(camera*)));
-	hitable** d_list;
-	checkCudaErrors(cudaMalloc((void**)& d_list, numSpheres * sizeof(hitable*)));
-	hitable** d_world;
-	checkCudaErrors(cudaMalloc((void**)& d_world, sizeof(hitable*)));
-	create_world<<<1,1>>>(d_list, d_world, d_cam, numSpheres, nx, ny, ranvec, perm_x, perm_y, perm_z, d_rand_state, d_tex_data, texnx, texny);
-	checkCudaErrors(cudaGetLastError());
-	checkCudaErrors(cudaDeviceSynchronize());
-
-	color* fb;
-	checkCudaErrors(cudaMallocManaged((void**)&fb, fb_size));
-
-	color* finalFb;
-	checkCudaErrors(cudaMallocManaged((void**)&finalFb, fb_size));
-
-	render << <blocks, threads >> > (fb, nx, ny, samples, d_cam, d_world, d_rand_state);
-	checkCudaErrors(cudaGetLastError());
-	checkCudaErrors(cudaDeviceSynchronize());
-
-	stop = clock();
-	float timer_seconds = ((float)(stop - start)) / CLOCKS_PER_SEC;
-	std::cerr << "took " << timer_seconds << " seconds.\n";
-
-	std::ofstream file_streamRaw;
-	file_streamRaw.open("fileRaw.ppm");
-
-	file_streamRaw << "P3\n" << nx << ' ' << ny << "\n255\n";
-
-	for (int j = ny - 1; j >= 0; j--) {
-		for (int i = 0; i < nx; i++) {
-			size_t pixel_index = j * nx + i;
-			write_color(file_streamRaw, fb[pixel_index]);
-		}
-		if (j % 100 == 0)
-			bar(j, ny);
-	}
-
-	checkCudaErrors(cudaDeviceSynchronize());
-	free_world << <1, 1>> > (d_list, d_world, d_cam, numSpheres, ranvec, perm_x, perm_y, perm_z, d_tex_data);
-	checkCudaErrors(cudaGetLastError());
-	checkCudaErrors(cudaFree(d_tex_data));
-	checkCudaErrors(cudaFree(d_cam));
-	checkCudaErrors(cudaFree(d_world));
-	checkCudaErrors(cudaFree(d_list));
-	checkCudaErrors(cudaFree(d_rand_state));
-	checkCudaErrors(cudaFree(fb));
-
-	cudaDeviceReset();
-
-	return 0;
-}
+//int cmain() {
+//	// hmmmm
+//	// hmmmmmmmm
+//
+//
+//	int num_pixels = nx * ny;
+//	size_t fb_size = num_pixels * sizeof(color);
+//
+//	
+//	
+//	vec3* ranvec;
+//	checkCudaErrors(cudaMalloc((void**)&ranvec, sizeof(vec3*)));
+//	int* perm_x;
+//	checkCudaErrors(cudaMalloc((void**)&perm_x, sizeof(int*)));
+//	int* perm_y;
+//	checkCudaErrors(cudaMalloc((void**)&perm_y, sizeof(int*)));
+//	int* perm_z;
+//	checkCudaErrors(cudaMalloc((void**)&perm_z, sizeof(int*)));
+//
+//	camera** d_cam;
+//	checkCudaErrors(cudaMalloc((void**)&d_cam, sizeof(camera*)));
+//	hitable** d_list;
+//	checkCudaErrors(cudaMalloc((void**)& d_list, numSpheres * sizeof(hitable*)));
+//	hitable** d_world;
+//	checkCudaErrors(cudaMalloc((void**)& d_world, sizeof(hitable*)));
+//	create_world<<<1,1>>>(d_list, d_world, d_cam, numSpheres, nx, ny, ranvec, perm_x, perm_y, perm_z, d_rand_state, d_tex_data, texnx, texny);
+//	checkCudaErrors(cudaGetLastError());
+//	checkCudaErrors(cudaDeviceSynchronize());
+//
+//	color* fb;
+//	checkCudaErrors(cudaMallocManaged((void**)&fb, fb_size));
+//
+//	color* finalFb;
+//	checkCudaErrors(cudaMallocManaged((void**)&finalFb, fb_size));
+//
+//	render << <blocks, threads >> > (fb, nx, ny, samples, d_cam, d_world, d_rand_state);
+//	checkCudaErrors(cudaGetLastError());
+//	checkCudaErrors(cudaDeviceSynchronize());
+//
+//	stop = clock();
+//	float timer_seconds = ((float)(stop - start)) / CLOCKS_PER_SEC;
+//	std::cerr << "took " << timer_seconds << " seconds.\n";
+//
+//	std::ofstream file_streamRaw;
+//	file_streamRaw.open("fileRaw.ppm");
+//
+//	file_streamRaw << "P3\n" << nx << ' ' << ny << "\n255\n";
+//
+//	for (int j = ny - 1; j >= 0; j--) {
+//		for (int i = 0; i < nx; i++) {
+//			size_t pixel_index = j * nx + i;
+//			write_color(file_streamRaw, fb[pixel_index]);
+//		}
+//		if (j % 100 == 0)
+//			bar(j, ny);
+//	}
+//
+//	checkCudaErrors(cudaDeviceSynchronize());
+//	free_world << <1, 1>> > (d_list, d_world, d_cam, numSpheres, ranvec, perm_x, perm_y, perm_z, d_tex_data);
+//	checkCudaErrors(cudaGetLastError());
+//	checkCudaErrors(cudaFree(d_tex_data));
+//	checkCudaErrors(cudaFree(d_cam));
+//	checkCudaErrors(cudaFree(d_world));
+//	checkCudaErrors(cudaFree(d_list));
+//	checkCudaErrors(cudaFree(d_rand_state));
+//	checkCudaErrors(cudaFree(fb));
+//
+//	cudaDeviceReset();
+//
+//	return 0;
+//}
 
 
 

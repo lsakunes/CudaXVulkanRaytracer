@@ -10,6 +10,12 @@
     <CudaCompile Include="cudaMain.cu">
       <Filter>CUDA</Filter>
     </CudaCompile>
+    <CudaCompile Include="cuda_render_system.cu">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
+    <CudaCompile Include="cuda_render_system.cuh">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Vulkan">
@@ -50,9 +56,6 @@
     <ClCompile Include="v_camera.cpp">
       <Filter>Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="cuda_render_system.cpp">
-      <Filter>Vulkan</Filter>
-    </ClCompile>
     <ClCompile Include="keyboard_movement_controller.cpp">
       <Filter>Vulkan</Filter>
     </ClCompile>
@@ -80,9 +83,6 @@
       <Filter>Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="v_camera.hpp">
-      <Filter>Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="cuda_render_system.hpp">
       <Filter>Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="keyboard_movement_controller.hpp">

@@ -9,7 +9,7 @@
 #define checkCudaErrors(val) check_cuda((val), #val, __FILE__, __LINE__)
 
 void check_cuda(cudaError_t result, char const* const func, const char* const file, int const line);
-// Declaration of a simple kernel function
+
 __global__ void plainUV(cudaSurfaceObject_t* surface, int nWidth, int nHeight);
 
 __global__ void copySurfaceToBuffer(cudaSurfaceObject_t* surface, unsigned char* buffer, int width, int height);
