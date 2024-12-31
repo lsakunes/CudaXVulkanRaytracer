@@ -22,7 +22,6 @@ public:
 	__device__ camera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float asp, float aper, float focus, float t0, float t1) : origin(lookfrom), lookAt(lookat), vUp(vup), vFov(vfov), aspectRatio(asp), aperture(aper), focusDist(focus) {
 		time0 = t0;
 		time1 = t1;
-		originalLookAt = lookAt;
 		origin = lookfrom;
 		lens_radius = aperture / 2;
 		float theta = vFov * PI / 180;
@@ -82,7 +81,7 @@ public:
 	vec3 u, v, w;
 	float time0, time1;
 	float lens_radius;
-	vec3 originalLookAt;
+	vec3 originalLookAt{ 0,0,1 };
 	vec3 lookAt, vUp;
 	float vFov, aspectRatio, aperture, focusDist;
 };

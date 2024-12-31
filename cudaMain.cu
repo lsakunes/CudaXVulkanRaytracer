@@ -60,7 +60,8 @@ void bar(int j,int ny){;;;;;;;;;;
 };;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 __device__ color ray_color(const ray& r, hitable **world, curandState* local_rand_state) {
-	vec3 bgColor(0.05, 0.05, 0.2);
+	vec3 bgColor(0.2, 0.2, 0.5);
+	vec3 horizonColor(0.1, 0, 0.1);
 	ray cur_ray = r;
 	vec3 cur_attenuation = vec3(1.0, 1.0, 1.0);
 	vec3 emitted = vec3(0, 0, 0);
@@ -81,7 +82,7 @@ __device__ color ray_color(const ray& r, hitable **world, curandState* local_ran
 		else {
 			vec3 unit_direction = unit_vector(cur_ray.direction());
 			float t = 0.5f * (unit_direction.y() + 1.0f);
-			vec3 c = (1.0f - t) * vec3(0.1, 0.1, 0.1) + t * bgColor;
+			vec3 c = (1.0f - t) * horizonColor + t * bgColor;
 			return cur_attenuation * c + emitted;
 		}
 	}
@@ -142,8 +143,8 @@ __global__ void create_world(hitable** d_list, hitable** d_world, camera** d_cam
 		*d_world = new hitable_list(d_list, numSpheres);
 		float R = cos(PI / 4);
 
-		vec3 lookfrom(0, 0, 0);
-		vec3 lookat(0, 0, 1);
+		vec3 lookfrom(0, 1, 3);
+		vec3 lookat(0, 0, -1);
 		float dist_to_focus = 5;
 		float aperture = 0.05;
 		*d_cam = new camera(lookfrom, lookat, vec3(0,-1,0), 20, float(nx)/float(ny), aperture, dist_to_focus, 0, 1);

@@ -40,10 +40,11 @@ __device__ bool get_triangle_uv(ray r, vec3 p1, vec3 p2, vec3 p3, float t_min, f
 	vec3 A = p2 - p1;
 	vec3 B = p3 - p1;
 
+
 	//yeah
 	vec3 ray_cross_B = cross(r.dir, B);
 	float det = dot(A, ray_cross_B);
-	if (det > -EPSILON && det < EPSILON) 
+	if (det > -EPSILON && det < EPSILON)
 		return false;
 
 	//hm

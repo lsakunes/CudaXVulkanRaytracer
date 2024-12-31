@@ -8,6 +8,9 @@ __global__ void Vulkan::run() {
 
 
     auto viewerObject = V_GameObject::createGameObject();
+    viewerObject.transform.translation = glm::vec3{ 0, 1, 3 };
+    viewerObject.transform.rotation = glm::vec3{ 0, glm::pi<float>(), 0};
+
     KeyboardMovementController cameraController{};
 
     std::chrono::steady_clock::time_point currentTime = std::chrono::high_resolution_clock::now();

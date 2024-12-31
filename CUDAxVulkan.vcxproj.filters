@@ -136,14 +136,17 @@
     <ClInclude Include="triangle.hpp">
       <Filter>CUDA</Filter>
     </ClInclude>
-    <ClInclude Include="v_utils.hpp">
-      <Filter>CUDA</Filter>
-    </ClInclude>
     <ClInclude Include="vec3.hpp">
       <Filter>CUDA</Filter>
     </ClInclude>
     <ClInclude Include="windowsSecurity.hpp">
       <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="v_utils.hpp">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="material.hpp">
+      <Filter>CUDA</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

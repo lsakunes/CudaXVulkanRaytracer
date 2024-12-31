@@ -138,6 +138,7 @@
     <ClInclude Include="kernel.cuh" />
     <ClInclude Include="keyboard_movement_controller.hpp" />
     <ClInclude Include="linmath.hpp" />
+    <ClInclude Include="material.hpp" />
     <ClInclude Include="perlin.hpp" />
     <ClInclude Include="ray.hpp" />
     <ClInclude Include="sphere.hpp" />
